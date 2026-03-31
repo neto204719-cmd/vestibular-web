@@ -124,10 +124,9 @@ function ProfileSection({ profile, onRefresh }) {
 // ─── Password section ─────────────────────────────────────────────────────────
 
 function PasswordSection() {
-  const [current,    setCurrent]    = useState('')
+  const { recoveryMode, clearRecovery } = useAuth()
   const [next,       setNext]       = useState('')
   const [confirm,    setConfirm]    = useState('')
-  const [showCur,    setShowCur]    = useState(false)
   const [showNew,    setShowNew]    = useState(false)
   const [saving,     setSaving]     = useState(false)
   const [saved,      setSaved]      = useState(false)
@@ -141,7 +140,8 @@ function PasswordSection() {
       const { error: e } = await supabase.auth.updateUser({ password: next })
       if (e) throw e
       setSaved(true)
-      setCurrent(''); setNext(''); setConfirm('')
+      setNext(''); setConfirm('')
+      if (recoveryMode) clearRecovery()
       setTimeout(() => setSaved(false), 2500)
     } catch (err) {
       setError(err.message)
@@ -159,6 +159,12 @@ function PasswordSection() {
   return (
     <SectionCard title="Alterar senha" icon={Lock}>
       <div className="space-y-4">
+        {recoveryMode && (
+          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-accent/10 border border-accent/30 text-sm text-ink-2 animate-fade-in">
+            <Shield size={15} className="text-accent mt-0.5 flex-shrink-0" />
+            <span>Você chegou pelo link de redefinição. Defina sua nova senha abaixo.</span>
+          </div>
+        )}
         <Field label="Nova senha">
           <TextInput value={next} onChange={e => setNext(e.target.value)}
             type={showNew ? 'text' : 'password'} placeholder="••••••••"
