@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme CSS variables ───────────────────────────────────────────────────── */
+
+/* Dark palette (default — also used when .dark class is present) */
+:root {
+  --accent-rgb:       124 106 247;
+  --accent-hover-rgb: 144 131 248;
+
+  /* surface scale — dark */
+  --s0: 12 12 14;
+  --s1: 17 17 19;
+  --s2: 24 24 27;
+  --s3: 34 34 38;
+  --s4: 46 46 51;
+  --s5: 63 63 70;
+
+  /* ink scale — dark (light text on dark bg) */
+  --ink-rgb:  244 244 245;
+  --ink2-rgb: 161 161 170;
+  --ink3-rgb: 113 113 122;
+  --ink4-rgb: 82 82 91;
+}
+
+/* Light palette — applied when html does NOT carry the .dark class */
+html:not(.dark) {
+  /* surface scale — light */
+  --s0: 240 240 245;
+  --s1: 255 255 255;
+  --s2: 248 248 251;
+  --s3: 237 237 242;
+  --s4: 220 220 228;
+  --s5: 200 200 210;
+
+  /* ink scale — light (dark text on light bg) */
+  --ink-rgb:  17 17 19;
+  --ink2-rgb: 63 63 70;
+  --ink3-rgb: 113 113 122;
+  --ink4-rgb: 161 161 170;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { @apply bg-surface-1 text-ink font-sans antialiased; font-feature-settings: 'cv02','cv03','cv04','cv11'; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-surface-5 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-ink-4; }
+  ::selection { @apply bg-accent/30 text-ink; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5
+           bg-accent hover:bg-accent-hover active:scale-[.98]
+           text-white text-sm font-medium rounded-lg
+           transition-all duration-150 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-accent/50
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5
+           bg-surface-3 hover:bg-surface-4 active:scale-[.98]
+           text-ink text-sm font-medium rounded-lg border border-surface-5
+           transition-all duration-150 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-accent/30
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-2
+           text-ink-2 hover:text-ink hover:bg-surface-3 active:scale-[.98]
+           text-sm font-medium rounded-lg
+           transition-all duration-150 focus-visible:outline-none;
+  }
+  .card { @apply bg-surface-2 border border-surface-4/60 rounded-xl p-5; }
+  .input {
+    @apply w-full px-3.5 py-2.5 bg-surface-2 border border-surface-5
+           rounded-lg text-sm text-ink placeholder:text-ink-4
+           focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/60
+           transition-all duration-150;
+  }
+  .label  { @apply text-xs font-medium text-ink-3 uppercase tracking-wider; }
+  .badge  { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium; }
+}
