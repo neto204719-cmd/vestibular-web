@@ -1,12 +1,49 @@
-import { useState } from 'react'
-import { CheckCircle2, XCircle, Star, StarOff, ImageOff, BookOpen } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap } from 'lucide-react'
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 
-const LETTERS = ['A', 'B', 'C', 'D', 'E']
+// ─── Popup flutuante de seleção de texto ──────────────────────────────────────
+
+function SelectionPopup({ rect, onAsk }) {
+  return (
+    <div
+      data-tutor-popup="true"
+      style={{
+        position: 'fixed',
+        left: rect.left + rect.width / 2,
+        top: rect.top - 6,
+        transform: 'translate(-50%, -100%)',
+        zIndex: 9999,
+        pointerEvents: 'auto',
+      }}
+    >
+      <button
+        onMouseDown={e => e.preventDefault()} // mantém a seleção ativa
+        onClick={onAsk}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover
+          text-white text-xs font-semibold shadow-xl animate-scale-in whitespace-nowrap"
+      >
+        <GraduationCap size={12} />
+        Perguntar ao Tutor
+      </button>
+      {/* Setinha apontando para a seleção */}
+      <div
+        style={{
+          width: 0, height: 0,
+          borderLeft: '5px solid transparent',
+          borderRight: '5px solid transparent',
+          borderTop: '5px solid rgb(var(--accent-rgb))',
+          margin: '0 auto',
+        }}
+      />
+    </div>
+  )
+}
+
+// ─── Alternativas ─────────────────────────────────────────────────────────────
 
 function OptionButton({ letter, text, state, onClick }) {
-  // state: 'idle' | 'selected' | 'correct' | 'wrong' | 'reveal-correct'
   const styles = {
     idle: 'border-surface-5 bg-surface-3 hover:border-accent/50 hover:bg-accent/5 cursor-pointer',
     selected: 'border-accent/60 bg-accent/10 cursor-pointer',
@@ -32,36 +69,75 @@ function OptionButton({ letter, text, state, onClick }) {
         {letter}
       </span>
       <span className={`text-sm leading-relaxed mt-0.5 transition-colors ${
-        state === 'correct' ? 'text-success font-medium' :
-        state === 'wrong' ? 'text-error' :
+        state === 'correct'        ? 'text-success font-medium' :
+        state === 'wrong'          ? 'text-error' :
         state === 'reveal-correct' ? 'text-success/80' :
         'text-ink-2'
       }`}>{text}</span>
-      {state === 'correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success" />}
-      {state === 'wrong' && <XCircle size={16} className="shrink-0 ml-auto mt-0.5 text-error" />}
+      {state === 'correct'        && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success" />}
+      {state === 'wrong'          && <XCircle      size={16} className="shrink-0 ml-auto mt-0.5 text-error" />}
       {state === 'reveal-correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success/60" />}
     </button>
   )
 }
 
+// ─── QuestionCard ─────────────────────────────────────────────────────────────
+
 export default function QuestionCard({ question, index, previousAnswer }) {
-  const [chosen, setChosen] = useState(previousAnswer?.answer_given ?? null)
+  const [chosen,    setChosen]    = useState(previousAnswer?.answer_given ?? null)
   const [submitted, setSubmitted] = useState(!!previousAnswer)
-  const [saving, setSaving] = useState(false)
-  const [favorite, setFavorite] = useState(false)
-  const [imgError, setImgError] = useState(false)
+  const [saving,    setSaving]    = useState(false)
+  const [favorite,  setFavorite]  = useState(false)
+  const [imgError,  setImgError]  = useState(false)
 
-  const correct = question.correct_letter?.trim()
+  // ── Seleção de texto → Perguntar ao Tutor ──
+  const statementRef = useRef(null)
+  const [selPopup,        setSelPopup]        = useState(null) // { rect, text }
+  const [selectionContext, setSelectionContext] = useState(null) // { text, id }
+
+  useEffect(() => {
+    function onMouseUp() {
+      setTimeout(() => {
+        const sel = window.getSelection()
+        const text = sel?.toString().trim()
+        if (!text || !statementRef.current?.contains(sel.anchorNode)) {
+          return
+        }
+        const rect = sel.getRangeAt(0).getBoundingClientRect()
+        setSelPopup({ rect, text })
+      }, 10)
+    }
+
+    function onMouseDown(e) {
+      if (e.target.closest('[data-tutor-popup]')) return
+      setSelPopup(null)
+    }
+
+    document.addEventListener('mouseup', onMouseUp)
+    document.addEventListener('mousedown', onMouseDown)
+    return () => {
+      document.removeEventListener('mouseup', onMouseUp)
+      document.removeEventListener('mousedown', onMouseDown)
+    }
+  }, [])
+
+  function handlePopupAsk() {
+    if (!selPopup) return
+    setSelectionContext({ text: selPopup.text, id: Date.now() })
+    setSelPopup(null)
+    window.getSelection()?.removeAllRanges()
+  }
+
+  // ── Lógica da questão ──
+  const correct   = question.correct_letter?.trim()
   const isCorrect = submitted && chosen === correct
-
-  const options = [...(question.options ?? [])]
-    .sort((a, b) => a.letter.localeCompare(b.letter))
+  const options   = [...(question.options ?? [])].sort((a, b) => a.letter.localeCompare(b.letter))
 
   function getOptionState(letter) {
     if (!submitted) return chosen === letter ? 'selected' : 'idle'
     if (letter === correct) return 'correct'
     if (letter === chosen && chosen !== correct) return 'wrong'
-    return 'reveal-correct' // show all correct option subtly
+    return 'reveal-correct'
   }
 
   async function handleSubmit() {
@@ -69,14 +145,14 @@ export default function QuestionCard({ question, index, previousAnswer }) {
     setSaving(true)
     try {
       await api.post('/api/answers', { question_id: question.id, answer_given: chosen })
-    } catch { /* silently ignore — still show result */ }
+    } catch { /* ignorado — exibe resultado mesmo assim */ }
     finally { setSaving(false); setSubmitted(true) }
   }
 
   async function toggleFavorite() {
     try {
       if (favorite) { await api.delete(`/api/favorites/${question.id}`); setFavorite(false) }
-      else { await api.post(`/api/favorites/${question.id}`); setFavorite(true) }
+      else          { await api.post(`/api/favorites/${question.id}`);   setFavorite(true) }
     } catch {}
   }
 
@@ -88,7 +164,8 @@ export default function QuestionCard({ question, index, previousAnswer }) {
           : 'border-error/30 shadow-sm shadow-error/5'
         : 'hover:border-surface-5'
     }`}>
-      {/* Header */}
+
+      {/* Header: número + badges + favorito */}
       <div className="flex items-start gap-3 mb-4">
         <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold
           ${submitted
@@ -119,14 +196,19 @@ export default function QuestionCard({ question, index, previousAnswer }) {
           className={`shrink-0 p-1.5 rounded-lg transition-all ${favorite ? 'text-warning' : 'text-ink-4 hover:text-warning'}`}
           title={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
-          {favorite ? <Star size={16} fill="currentColor" /> : <Star size={16} />}
+          <Star size={16} fill={favorite ? 'currentColor' : 'none'} />
         </button>
       </div>
 
-      {/* Enunciado */}
-      <div className="mb-4">
-        <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{question.statement}</p>
+      {/* Enunciado — suporte a seleção de texto */}
+      <div className="mb-4" ref={statementRef}>
+        <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap select-text">
+          {question.statement}
+        </p>
       </div>
+
+      {/* Popup flutuante de seleção */}
+      {selPopup && <SelectionPopup rect={selPopup.rect} onAsk={handlePopupAsk} />}
 
       {/* Imagem — entre o enunciado e as alternativas */}
       {question.image_url && !imgError && (
@@ -169,9 +251,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </button>
       ) : (
         <div className={`rounded-xl p-4 border animate-slide-up ${
-          isCorrect
-            ? 'bg-success/8 border-success/25'
-            : 'bg-error/8 border-error/25'
+          isCorrect ? 'bg-success/8 border-success/25' : 'bg-error/8 border-error/25'
         }`}>
           <div className="flex items-center gap-2 mb-2">
             {isCorrect
@@ -183,15 +263,18 @@ export default function QuestionCard({ question, index, previousAnswer }) {
             <p className="text-sm text-ink-2 leading-relaxed">{question.explanation}</p>
           )}
           {!question.explanation && !isCorrect && (
-            <p className="text-sm text-ink-3">Use o chat abaixo para entender o erro com o tutor.</p>
+            <p className="text-sm text-ink-3">Pergunte ao Tutor abaixo para entender o erro.</p>
           )}
         </div>
       )}
 
-      {/* Chat contextual — só aparece após responder */}
-      {submitted && (
-        <QuestionChat question={question} userAnswer={chosen} isCorrect={isCorrect} />
-      )}
+      {/* Chat do Tutor — sempre visível, independente de ter respondido */}
+      <QuestionChat
+        question={question}
+        userAnswer={chosen}
+        isCorrect={isCorrect}
+        selectionContext={selectionContext}
+      />
     </article>
   )
 }

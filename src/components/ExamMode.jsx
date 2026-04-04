@@ -3,9 +3,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   X, Flag, ChevronLeft, ChevronRight, Trophy, Clock,
   RotateCcw, CheckCircle, XCircle, Minus, BookOpen,
-  AlertTriangle, Loader2, Eye, EyeOff,
+  AlertTriangle, Loader2, Eye, EyeOff, GraduationCap,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import QuestionChat from './QuestionChat'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,43 @@ function filterLabel(filters) {
   if (filters.year) parts.push(filters.year)
   if (filters.topic) parts.push(`"${filters.topic}"`)
   return parts.length ? parts.join(' · ') : 'Todos os temas'
+}
+
+// ─── Popup flutuante de seleção de texto ──────────────────────────────────────
+
+function SelectionPopup({ rect, onAsk }) {
+  return (
+    <div
+      data-tutor-popup="true"
+      style={{
+        position: 'fixed',
+        left: rect.left + rect.width / 2,
+        top: rect.top - 6,
+        transform: 'translate(-50%, -100%)',
+        zIndex: 9999,
+        pointerEvents: 'auto',
+      }}
+    >
+      <button
+        onMouseDown={e => e.preventDefault()}
+        onClick={onAsk}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent/90
+          text-white text-xs font-semibold shadow-xl whitespace-nowrap"
+      >
+        <GraduationCap size={12} />
+        Perguntar ao Tutor
+      </button>
+      <div
+        style={{
+          width: 0, height: 0,
+          borderLeft: '5px solid transparent',
+          borderRight: '5px solid transparent',
+          borderTop: '5px solid rgb(var(--accent-rgb))',
+          margin: '0 auto',
+        }}
+      />
+    </div>
+  )
 }
 
 // ─── sub-components ───────────────────────────────────────────────────────────
@@ -84,7 +122,7 @@ function QuestionSidebarBtn({ num, status, current, onClick }) {
 
 // ─── Resolution panel ─────────────────────────────────────────────────────────
 
-function ResolutionPanel({ q, userAnswer, isReview }) {
+function ResolutionPanel({ q, userAnswer, isReview, showGabarito, selectionContext }) {
   const isCorrect = userAnswer && userAnswer === q.correct_letter
 
   return (
@@ -94,56 +132,73 @@ function ResolutionPanel({ q, userAnswer, isReview }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
-        {userAnswer ? (
-          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold ${
-            isCorrect
-              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-              : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
-          }`}>
-            {isCorrect
-              ? <><CheckCircle size={16} /> Resposta correta!</>
-              : <><XCircle size={16} /> Resposta incorreta</>
-            }
-          </div>
-        ) : (
-          <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm bg-surface-3 border border-surface-4 text-ink-4">
-            <Minus size={16} /> Questão não respondida
-          </div>
-        )}
+        {showGabarito ? (
+          <>
+            {userAnswer ? (
+              <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold ${
+                isCorrect
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
+              }`}>
+                {isCorrect
+                  ? <><CheckCircle size={16} /> Resposta correta!</>
+                  : <><XCircle size={16} /> Resposta incorreta</>
+                }
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm bg-surface-3 border border-surface-4 text-ink-4">
+                <Minus size={16} /> Questão não respondida
+              </div>
+            )}
 
-        <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
-          <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-lg font-bold text-emerald-400">
-              {q.correct_letter}
-            </span>
-            <span className="text-sm text-ink-2 leading-relaxed">
-              {q.options?.find(o => o.letter === q.correct_letter)?.text ?? ''}
-            </span>
-          </div>
-        </div>
-
-        {userAnswer && !isCorrect && (
-          <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
-            <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
-            <div className="flex items-center gap-3">
-              <span className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-lg font-bold text-rose-400">
-                {userAnswer}
-              </span>
-              <span className="text-sm text-ink-2 leading-relaxed">
-                {q.options?.find(o => o.letter === userAnswer)?.text ?? ''}
-              </span>
+            <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+              <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-lg font-bold text-emerald-400">
+                  {q.correct_letter}
+                </span>
+                <span className="text-sm text-ink-2 leading-relaxed">
+                  {q.options?.find(o => o.letter === q.correct_letter)?.text ?? ''}
+                </span>
+              </div>
             </div>
+
+            {userAnswer && !isCorrect && (
+              <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+                <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
+                <div className="flex items-center gap-3">
+                  <span className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-lg font-bold text-rose-400">
+                    {userAnswer}
+                  </span>
+                  <span className="text-sm text-ink-2 leading-relaxed">
+                    {q.options?.find(o => o.letter === userAnswer)?.text ?? ''}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="p-5 rounded-xl bg-surface-2 border border-surface-3 border-dashed flex flex-col items-center gap-3 text-center py-8">
+              <span className="text-3xl">🚧</span>
+              <div>
+                <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
+                <p className="text-xs text-ink-4 mt-1">Em breve você terá acesso à resolução detalhada desta questão.</p>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-xs text-ink-4 text-center py-2">
+            O gabarito estará disponível ao finalizar o simulado.
           </div>
         )}
 
-        <div className="p-5 rounded-xl bg-surface-2 border border-surface-3 border-dashed flex flex-col items-center gap-3 text-center py-8">
-          <span className="text-3xl">🚧</span>
-          <div>
-            <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
-            <p className="text-xs text-ink-4 mt-1">Em breve você terá acesso à resolução detalhada desta questão.</p>
-          </div>
-        </div>
+        {/* Chat do Tutor — sempre visível no painel de resolução */}
+        <QuestionChat
+          key={q.id}
+          question={q}
+          userAnswer={showGabarito ? userAnswer : null}
+          isCorrect={showGabarito ? isCorrect : false}
+          selectionContext={selectionContext}
+        />
       </div>
     </div>
   )
@@ -390,6 +445,51 @@ export default function ExamMode({ filters, onClose }) {
   const [error, setError] = useState(null)
   const timerRef = useRef(null)
 
+  // ── Seleção de texto → Perguntar ao Tutor ──
+  const statementRef = useRef(null)
+  const [selPopup, setSelPopup] = useState(null)           // { rect, text }
+  const [selectionContext, setSelectionContext] = useState(null) // { text, id }
+  const [forceShowPanel, setForceShowPanel] = useState(false)
+
+  // Reseta seleção ao trocar de questão
+  useEffect(() => {
+    setSelPopup(null)
+    setSelectionContext(null)
+    setForceShowPanel(false)
+  }, [currentIdx])
+
+  useEffect(() => {
+    function onMouseUp() {
+      setTimeout(() => {
+        const sel = window.getSelection()
+        const text = sel?.toString().trim()
+        if (!text || !statementRef.current?.contains(sel.anchorNode)) return
+        const rect = sel.getRangeAt(0).getBoundingClientRect()
+        setSelPopup({ rect, text })
+      }, 10)
+    }
+
+    function onMouseDown(e) {
+      if (e.target.closest('[data-tutor-popup]')) return
+      setSelPopup(null)
+    }
+
+    document.addEventListener('mouseup', onMouseUp)
+    document.addEventListener('mousedown', onMouseDown)
+    return () => {
+      document.removeEventListener('mouseup', onMouseUp)
+      document.removeEventListener('mousedown', onMouseDown)
+    }
+  }, [])
+
+  function handlePopupAsk() {
+    if (!selPopup) return
+    setSelectionContext({ text: selPopup.text, id: Date.now() })
+    setForceShowPanel(true)
+    setSelPopup(null)
+    window.getSelection()?.removeAllRanges()
+  }
+
   useEffect(() => {
     if (phase === 'exam') {
       timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -499,7 +599,9 @@ export default function ExamMode({ filters, onClose }) {
   // - sempre visível na fase de revisão (após finalizar)
   // - modo 'after-each': aparece logo ao responder cada questão
   // - modo 'at-end': nunca durante o simulado (só na revisão)
+  // - forceShowPanel: aberto via seleção de texto → Perguntar ao Tutor
   const showResolution = isReview || (reviewMode === 'after-each' && !!userAnswer)
+  const panelVisible = showResolution || forceShowPanel
 
   const getOptionState = (letter) => {
     if (!isReview) {
@@ -713,10 +815,13 @@ export default function ExamMode({ filters, onClose }) {
                   )}
                 </div>
 
-                {/* Enunciado — aparece ANTES da imagem */}
-                <div className="text-ink mb-5 whitespace-pre-wrap leading-[1.85]" style={{ fontSize: '17px' }}>
+                {/* Enunciado — suporte a seleção de texto */}
+                <div ref={statementRef} className="text-ink mb-5 whitespace-pre-wrap leading-[1.85] select-text" style={{ fontSize: '17px' }}>
                   {q.statement}
                 </div>
+
+                {/* Popup flutuante de seleção */}
+                {selPopup && <SelectionPopup rect={selPopup.rect} onAsk={handlePopupAsk} />}
 
                 {/* Imagem — aparece ENTRE enunciado e alternativas */}
                 {q.image_url && (
@@ -782,9 +887,15 @@ export default function ExamMode({ filters, onClose }) {
           </div>
 
           {/* ── Resolution panel ── */}
-          {showResolution && q && (
+          {panelVisible && q && (
             <div className="w-[35%] min-w-[300px] max-w-[460px] flex-shrink-0 border-l border-surface-3 bg-surface-1 overflow-y-auto flex flex-col">
-              <ResolutionPanel q={q} userAnswer={userAnswer} isReview={isReview} />
+              <ResolutionPanel
+                q={q}
+                userAnswer={userAnswer}
+                isReview={isReview}
+                showGabarito={showResolution}
+                selectionContext={selectionContext}
+              />
             </div>
           )}
         </div>

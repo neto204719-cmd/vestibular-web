@@ -2,23 +2,60 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react'
 import { api } from '../lib/api'
 
-export default function QuestionChat({ question, userAnswer, isCorrect }) {
+/**
+ * QuestionChat — chat com o Tutor sobre uma questão específica.
+ *
+ * Props:
+ *  - question        : objeto da questão (obrigatório)
+ *  - userAnswer      : letra escolhida pelo aluno (opcional)
+ *  - isCorrect       : se acertou (opcional)
+ *  - selectionContext: { text: string, id: number } | null
+ *                      Quando definido, auto-abre o chat com o trecho selecionado.
+ */
+export default function QuestionChat({
+  question,
+  userAnswer = null,
+  isCorrect  = false,
+  selectionContext = null,
+}) {
   const [open,    setOpen]    = useState(false)
   const [msgs,    setMsgs]    = useState([])
   const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
+  // Controla qual selectionContext já foi processado (pelo id)
+  const prevSelIdRef = useRef(null)
 
+  // ── Reage ao grifo: auto-abre e envia o trecho selecionado ──
   useEffect(() => {
-    if (open && msgs.length === 0) {
-      // Mensagem inicial contextual
-      const ctx = isCorrect
+    if (!selectionContext) return
+    if (selectionContext.id === prevSelIdRef.current) return
+    prevSelIdRef.current = selectionContext.id
+    const msg = `Sobre este trecho do enunciado:\n"${selectionContext.text}"\n\nPode me explicar melhor?`
+    setOpen(true)
+    setMsgs(m => [...m, { role: 'user', text: msg }])
+    sendMessage(msg)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectionContext])
+
+  // ── Mensagem inicial ao abrir sem seleção prévia ──
+  useEffect(() => {
+    if (!open || msgs.length > 0) return
+    let ctx
+    if (userAnswer) {
+      ctx = isCorrect
         ? `Acertei a questão de ${question.subject_area ?? question.subject}${question.topic ? ` sobre ${question.topic}` : ''}. Pode me dar uma dica extra ou aprofundar o conceito?`
         : `Errei a questão de ${question.subject_area ?? question.subject}${question.topic ? ` sobre ${question.topic}` : ''}. Marquei ${userAnswer} mas o gabarito era ${question.correct_letter}. Por que errei?`
-      setMsgs([{ role: 'user', text: ctx, auto: true }])
-      sendMessage(ctx)
+    } else {
+      ctx = `Estou estudando uma questão de ${question.subject_area ?? question.subject}${question.topic ? ` sobre ${question.topic}` : ''}. Pode me ajudar a entender o enunciado e o conceito cobrado?`
     }
+    setMsgs([{ role: 'user', text: ctx, auto: true }])
+    sendMessage(ctx)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150)
   }, [open])
 
@@ -28,7 +65,10 @@ export default function QuestionChat({ question, userAnswer, isCorrect }) {
 
   async function sendMessage(text) {
     setLoading(true)
-    const context = `[Contexto da questão]\nMatéria: ${question.subject_area ?? question.subject}\nAssunto: ${question.topic ?? '—'}\nEnunciado: ${question.statement.slice(0, 300)}\nGabarito: ${question.correct_letter}\nResposta do aluno: ${userAnswer}\n\n${text}`
+    const answerCtx = userAnswer
+      ? `Gabarito: ${question.correct_letter}\nResposta do aluno: ${userAnswer}`
+      : ''
+    const context = `[Contexto da questão]\nMatéria: ${question.subject_area ?? question.subject}\nAssunto: ${question.topic ?? '—'}\nEnunciado: ${question.statement.slice(0, 400)}\n${answerCtx}\n\n${text}`
     try {
       const data = await api.post('/api/chat', { message: context })
       setMsgs(m => [...m, { role: 'assistant', text: data.text }])
@@ -59,16 +99,16 @@ export default function QuestionChat({ question, userAnswer, isCorrect }) {
         <div className="w-5 h-5 rounded-md bg-accent/20 flex items-center justify-center">
           <GraduationCap size={12} className="text-accent" />
         </div>
-        <span className="flex-1 text-left">Conversar com o tutor sobre esta questão</span>
+        <span className="flex-1 text-left">Conversar com o Tutor</span>
         {open ? <ChevronUp size={15} className="text-ink-4" /> : <ChevronDown size={15} className="text-ink-4" />}
       </button>
 
       {open && (
         <div className="animate-slide-up">
-          {/* Messages */}
+          {/* Mensagens */}
           <div className="max-h-[320px] overflow-y-auto p-4 space-y-3 bg-surface-2">
             {msgs.filter(m => !m.auto).length === 0 && !loading && (
-              <p className="text-xs text-ink-3 text-center py-2">O tutor vai te ajudar a entender esta questão.</p>
+              <p className="text-xs text-ink-3 text-center py-2">O Tutor está pronto para te ajudar com esta questão.</p>
             )}
             {msgs.map((m, i) => (
               !m.auto && (
@@ -98,16 +138,19 @@ export default function QuestionChat({ question, userAnswer, isCorrect }) {
             <div ref={bottomRef} />
           </div>
 
-          {/* Quick replies */}
+          {/* Respostas rápidas */}
           {!loading && msgs.some(m => m.role === 'assistant') && (
             <div className="px-4 py-2 bg-surface-2 border-t border-surface-4/40 flex gap-2 flex-wrap">
               {[
-                !isCorrect && 'Como não errar mais?',
+                userAnswer && !isCorrect && 'Como não errar mais?',
                 'Quero outro exemplo',
                 'Explica o conceito',
               ].filter(Boolean).map(q => (
-                <button key={q} onClick={() => { setMsgs(m => [...m, { role: 'user', text: q }]); sendMessage(q) }}
-                  className="text-xs px-2.5 py-1 rounded-lg bg-surface-3 hover:bg-surface-4 text-ink-2 hover:text-ink transition-all border border-surface-5">
+                <button
+                  key={q}
+                  onClick={() => { setMsgs(m => [...m, { role: 'user', text: q }]); sendMessage(q) }}
+                  className="text-xs px-2.5 py-1 rounded-lg bg-surface-3 hover:bg-surface-4 text-ink-2 hover:text-ink transition-all border border-surface-5"
+                >
                   {q}
                 </button>
               ))}
@@ -120,7 +163,7 @@ export default function QuestionChat({ question, userAnswer, isCorrect }) {
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Pergunte sobre esta questão..."
+              placeholder="Pergunte ao Tutor sobre esta questão..."
               className="input flex-1 py-2 text-sm"
               disabled={loading}
             />
