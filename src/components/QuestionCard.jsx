@@ -268,8 +268,9 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </div>
       )}
 
-      {/* Chat do Tutor — sempre visível, independente de ter respondido */}
+      {/* Chat do Tutor — key garante instância fresca sem histórico anterior */}
       <QuestionChat
+        key={question.id}
         question={question}
         userAnswer={chosen}
         isCorrect={isCorrect}

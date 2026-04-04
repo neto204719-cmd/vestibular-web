@@ -22,8 +22,9 @@ export default function QuestionChat({
   const [msgs,    setMsgs]    = useState([])
   const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
-  const bottomRef = useRef(null)
-  const inputRef  = useRef(null)
+  const msgsContainerRef = useRef(null) // scroll interno das mensagens
+  const chatHeaderRef    = useRef(null) // scroll-to-chat ao abrir
+  const inputRef         = useRef(null)
   // Controla qual selectionContext já foi processado (pelo id)
   const prevSelIdRef = useRef(null)
 
@@ -56,11 +57,20 @@ export default function QuestionChat({
   }, [open])
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 150)
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 150)
+      // Scroll suave até o header do chat — para exatamente no início do componente,
+      // sem ultrapassar. block:'nearest' evita scroll desnecessário se já visível.
+      setTimeout(() => {
+        chatHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }, 80)
+    }
   }, [open])
 
+  // Scroll interno das mensagens — apenas dentro do container, sem mover a página
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = msgsContainerRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [msgs])
 
   async function sendMessage(text) {
@@ -80,7 +90,8 @@ export default function QuestionChat({
       ].join('\n')
 
       console.log('[QuestionChat] sendMessage → chamando /api/chat', { text, context })
-      const data = await api.post('/api/chat', { message: context })
+      // questionId permite ao backend separar o histórico por questão
+      const data = await api.post('/api/chat', { message: context, questionId: question.id })
       console.log('[QuestionChat] resposta recebida', data)
       setMsgs(m => [...m, { role: 'assistant', text: data.text ?? data.message ?? data.reply ?? JSON.stringify(data) }])
     } catch (err) {
@@ -102,8 +113,9 @@ export default function QuestionChat({
 
   return (
     <div className="mt-4 border border-surface-4/60 rounded-xl overflow-hidden">
-      {/* Toggle */}
+      {/* Toggle — chatHeaderRef: âncora do scroll ao abrir */}
       <button
+        ref={chatHeaderRef}
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center gap-2.5 px-4 py-3 bg-surface-3 hover:bg-surface-4
           transition-colors text-sm font-medium text-ink-2 hover:text-ink"
@@ -117,8 +129,8 @@ export default function QuestionChat({
 
       {open && (
         <div className="animate-slide-up">
-          {/* Mensagens */}
-          <div className="max-h-[320px] overflow-y-auto p-4 space-y-3 bg-surface-2">
+          {/* Mensagens — scroll controlado via msgsContainerRef.scrollTop, sem mover a página */}
+          <div ref={msgsContainerRef} className="max-h-[320px] overflow-y-auto p-4 space-y-3 bg-surface-2">
             {msgs.filter(m => !m.auto).length === 0 && !loading && (
               <p className="text-xs text-ink-3 text-center py-2">O Tutor está pronto para te ajudar com esta questão.</p>
             )}
@@ -147,7 +159,6 @@ export default function QuestionChat({
                 </div>
               </div>
             )}
-            <div ref={bottomRef} />
           </div>
 
           {/* Respostas rápidas */}
