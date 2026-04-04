@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap } from 'lucide-react'
+import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap, Minus } from 'lucide-react'
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 
@@ -250,21 +250,71 @@ export default function QuestionCard({ question, index, previousAnswer }) {
           {saving ? 'Salvando...' : 'Confirmar resposta'}
         </button>
       ) : (
-        <div className={`rounded-xl p-4 border animate-slide-up ${
-          isCorrect ? 'bg-success/8 border-success/25' : 'bg-error/8 border-error/25'
-        }`}>
-          <div className="flex items-center gap-2 mb-2">
+        <div className="space-y-3 animate-slide-up">
+          {/* Badge de acerto/erro */}
+          <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border ${
+            isCorrect
+              ? 'bg-success/8 border-success/25 text-success'
+              : 'bg-error/8 border-error/25 text-error'
+          }`}>
             {isCorrect
-              ? <><CheckCircle2 size={16} className="text-success" /><span className="text-sm font-semibold text-success">Correto! 🎉</span></>
-              : <><XCircle size={16} className="text-error" /><span className="text-sm font-semibold text-error">Incorreto — gabarito: <strong>{correct}</strong></span></>
+              ? <><CheckCircle2 size={16} /><span className="text-sm font-semibold">Correto! 🎉</span></>
+              : <><XCircle size={16} /><span className="text-sm font-semibold">Resposta incorreta</span></>
             }
           </div>
-          {question.explanation && (
-            <p className="text-sm text-ink-2 leading-relaxed">{question.explanation}</p>
-          )}
-          {!question.explanation && !isCorrect && (
-            <p className="text-sm text-ink-3">Pergunte ao Tutor abaixo para entender o erro.</p>
-          )}
+
+          {/* Painel de resolução — igual ao Simulado */}
+          <div className="rounded-xl border border-surface-4 bg-surface-2 overflow-hidden">
+            <div className="px-4 py-3 border-b border-surface-4 bg-surface-3">
+              <p className="text-xs font-semibold text-ink-4 uppercase tracking-wider">Resolução</p>
+            </div>
+
+            <div className="p-4 space-y-3">
+              {/* Gabarito oficial */}
+              <div className="p-3 rounded-xl bg-surface-1 border border-surface-3">
+                <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
+                <div className="flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-base font-bold text-emerald-400 flex-shrink-0">
+                    {correct}
+                  </span>
+                  <span className="text-sm text-ink-2 leading-relaxed">
+                    {question.options?.find(o => o.letter === correct)?.text ?? ''}
+                  </span>
+                </div>
+              </div>
+
+              {/* Resposta do aluno — só se errou */}
+              {!isCorrect && chosen && (
+                <div className="p-3 rounded-xl bg-surface-1 border border-surface-3">
+                  <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
+                  <div className="flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-base font-bold text-rose-400 flex-shrink-0">
+                      {chosen}
+                    </span>
+                    <span className="text-sm text-ink-2 leading-relaxed">
+                      {question.options?.find(o => o.letter === chosen)?.text ?? ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Explicação (se houver) ou placeholder */}
+              {question.explanation ? (
+                <div className="p-3 rounded-xl bg-surface-1 border border-surface-3">
+                  <p className="text-xs text-ink-4 mb-1.5">Explicação</p>
+                  <p className="text-sm text-ink-2 leading-relaxed">{question.explanation}</p>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-surface-1 border border-surface-3 border-dashed flex flex-col items-center gap-2 text-center">
+                  <span className="text-2xl">🚧</span>
+                  <div>
+                    <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
+                    <p className="text-xs text-ink-4 mt-0.5">Em breve você terá acesso à resolução detalhada desta questão.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

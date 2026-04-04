@@ -40,22 +40,6 @@ export default function QuestionChat({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionContext])
 
-  // ── Mensagem inicial ao abrir sem seleção prévia ──
-  useEffect(() => {
-    if (!open || msgs.length > 0) return
-    let ctx
-    if (userAnswer) {
-      ctx = isCorrect
-        ? `Acertei a questão de ${question.subject_area ?? question.subject}${question.topic ? ` sobre ${question.topic}` : ''}. Pode me dar uma dica extra ou aprofundar o conceito?`
-        : `Errei a questão de ${question.subject_area ?? question.subject}${question.topic ? ` sobre ${question.topic}` : ''}. Marquei ${userAnswer} mas o gabarito era ${question.correct_letter}. Por que errei?`
-    } else {
-      ctx = `Estou estudando uma questão de ${question.subject_area ?? question.subject}${question.topic ? ` sobre ${question.topic}` : ''}. Pode me ajudar a entender o enunciado e o conceito cobrado?`
-    }
-    setMsgs([{ role: 'user', text: ctx, auto: true }])
-    sendMessage(ctx)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 150)
@@ -131,24 +115,22 @@ export default function QuestionChat({
         <div className="animate-slide-up">
           {/* Mensagens — scroll controlado via msgsContainerRef.scrollTop, sem mover a página */}
           <div ref={msgsContainerRef} className="max-h-[320px] overflow-y-auto p-4 space-y-3 bg-surface-2">
-            {msgs.filter(m => !m.auto).length === 0 && !loading && (
-              <p className="text-xs text-ink-3 text-center py-2">O Tutor está pronto para te ajudar com esta questão.</p>
+            {msgs.length === 0 && !loading && (
+              <p className="text-xs text-ink-3 text-center py-2">Pergunte qualquer coisa sobre esta questão ao Tutor.</p>
             )}
             {msgs.map((m, i) => (
-              !m.auto && (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[88%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
-                    ${m.role === 'user'
-                      ? 'bg-accent text-white rounded-br-sm'
-                      : m.error
-                        ? 'bg-error/10 text-error border border-error/20 rounded-bl-sm'
-                        : 'bg-surface-3 text-ink rounded-bl-sm'
-                    }`}
-                  >
-                    {m.text}
-                  </div>
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[88%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
+                  ${m.role === 'user'
+                    ? 'bg-accent text-white rounded-br-sm'
+                    : m.error
+                      ? 'bg-error/10 text-error border border-error/20 rounded-bl-sm'
+                      : 'bg-surface-3 text-ink rounded-bl-sm'
+                  }`}
+                >
+                  {m.text}
                 </div>
-              )
+              </div>
             ))}
             {loading && (
               <div className="flex justify-start">
@@ -161,20 +143,20 @@ export default function QuestionChat({
             )}
           </div>
 
-          {/* Respostas rápidas */}
-          {!loading && msgs.some(m => m.role === 'assistant') && (
+          {/* Sugestões rápidas — aparecem antes da primeira resposta do tutor */}
+          {!loading && msgs.length === 0 && (
             <div className="px-4 py-2 bg-surface-2 border-t border-surface-4/40 flex gap-2 flex-wrap">
               {[
-                userAnswer && !isCorrect && 'Como não errar mais?',
-                'Quero outro exemplo',
+                userAnswer && !isCorrect ? 'Por que errei?' : null,
                 'Explica o conceito',
-              ].filter(Boolean).map(q => (
+                'Quero outro exemplo',
+              ].filter(Boolean).map(suggestion => (
                 <button
-                  key={q}
-                  onClick={() => { setMsgs(m => [...m, { role: 'user', text: q }]); sendMessage(q) }}
+                  key={suggestion}
+                  onClick={() => { setMsgs(m => [...m, { role: 'user', text: suggestion }]); sendMessage(suggestion) }}
                   className="text-xs px-2.5 py-1 rounded-lg bg-surface-3 hover:bg-surface-4 text-ink-2 hover:text-ink transition-all border border-surface-5"
                 >
-                  {q}
+                  {suggestion}
                 </button>
               ))}
             </div>
