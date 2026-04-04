@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+
 import {
   X, Flag, ChevronLeft, ChevronRight, Trophy, Clock,
   RotateCcw, CheckCircle, XCircle, Minus, BookOpen,
-  AlertTriangle, Loader2, Construction,
+  AlertTriangle, Loader2, Eye, EyeOff,
 } from 'lucide-react'
 import { api } from '../lib/api'
 
@@ -17,14 +18,15 @@ function formatTime(sec) {
   if (h > 0) return `${h}:${pad(m)}:${pad(s)}`
   return `${pad(m)}:${pad(s)}`
 }
+
 function pad(n) { return String(n).padStart(2, '0') }
 
 function filterLabel(filters) {
   const parts = []
   if (filters.subject_area) parts.push(filters.subject_area)
-  if (filters.vestibular)   parts.push(filters.vestibular)
-  if (filters.year)         parts.push(filters.year)
-  if (filters.topic)        parts.push(`"${filters.topic}"`)
+  if (filters.vestibular) parts.push(filters.vestibular)
+  if (filters.year) parts.push(filters.year)
+  if (filters.topic) parts.push(`"${filters.topic}"`)
   return parts.length ? parts.join(' · ') : 'Todos os temas'
 }
 
@@ -33,17 +35,17 @@ function filterLabel(filters) {
 function OptionButton({ letter, text, state, onClick, disabled }) {
   const base = 'flex items-start gap-4 w-full text-left px-5 py-4 rounded-xl border transition-all duration-150 group'
   const styles = {
-    idle:             'border-surface-4 bg-surface-2 hover:border-accent/50 hover:bg-surface-3 cursor-pointer',
-    selected:         'border-accent bg-accent/10 cursor-pointer',
-    correct:          'border-emerald-500 bg-emerald-500/10 cursor-default',
-    wrong:            'border-rose-500 bg-rose-500/10 cursor-default',
+    idle: 'border-surface-4 bg-surface-2 hover:border-accent/50 hover:bg-surface-3 cursor-pointer',
+    selected: 'border-accent bg-accent/10 cursor-pointer',
+    correct: 'border-emerald-500 bg-emerald-500/10 cursor-default',
+    wrong: 'border-rose-500 bg-rose-500/10 cursor-default',
     'reveal-correct': 'border-emerald-500/60 bg-emerald-500/5 cursor-default',
   }
   const letterStyles = {
-    idle:             'border border-surface-4 text-ink-3 group-hover:border-accent/60 group-hover:text-accent',
-    selected:         'bg-accent border-accent text-white',
-    correct:          'bg-emerald-500 border-emerald-500 text-white',
-    wrong:            'bg-rose-500 border-rose-500 text-white',
+    idle: 'border border-surface-4 text-ink-3 group-hover:border-accent/60 group-hover:text-accent',
+    selected: 'bg-accent border-accent text-white',
+    correct: 'bg-emerald-500 border-emerald-500 text-white',
+    wrong: 'bg-rose-500 border-rose-500 text-white',
     'reveal-correct': 'border-emerald-500/60 text-emerald-400',
   }
   return (
@@ -53,8 +55,8 @@ function OptionButton({ letter, text, state, onClick, disabled }) {
         {letter}
       </span>
       <span className={`text-base leading-relaxed pt-0.5 ${
-        state === 'correct'  ? 'text-emerald-300' :
-        state === 'wrong'    ? 'text-rose-300' :
+        state === 'correct' ? 'text-emerald-300' :
+        state === 'wrong' ? 'text-rose-300' :
         state === 'selected' ? 'text-ink' : 'text-ink-2'
       }`}>{text}</span>
     </button>
@@ -64,9 +66,9 @@ function OptionButton({ letter, text, state, onClick, disabled }) {
 function QuestionSidebarBtn({ num, status, current, onClick }) {
   const base = 'w-9 h-9 rounded-lg text-xs font-semibold transition-all flex items-center justify-center relative'
   const styles = {
-    unanswered:         'bg-surface-3 text-ink-3 hover:bg-surface-4 hover:text-ink',
-    answered:           'bg-accent/80 text-white hover:bg-accent',
-    flagged:            'bg-amber-500/80 text-white hover:bg-amber-500',
+    unanswered: 'bg-surface-3 text-ink-3 hover:bg-surface-4 hover:text-ink',
+    answered: 'bg-accent/80 text-white hover:bg-accent',
+    flagged: 'bg-amber-500/80 text-white hover:bg-amber-500',
     'answered-flagged': 'bg-accent/80 text-white hover:bg-accent',
   }
   const ring = current ? 'ring-2 ring-white ring-offset-1 ring-offset-surface-1' : ''
@@ -87,13 +89,11 @@ function ResolutionPanel({ q, userAnswer, isReview }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Panel header */}
       <div className="px-5 py-4 border-b border-surface-3 flex-shrink-0">
         <p className="text-xs font-semibold text-ink-4 uppercase tracking-wider">Resolução</p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
-        {/* Result badge */}
         {userAnswer ? (
           <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold ${
             isCorrect
@@ -111,7 +111,6 @@ function ResolutionPanel({ q, userAnswer, isReview }) {
           </div>
         )}
 
-        {/* Correct answer */}
         <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
           <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
           <div className="flex items-center gap-3">
@@ -124,7 +123,6 @@ function ResolutionPanel({ q, userAnswer, isReview }) {
           </div>
         </div>
 
-        {/* Wrong answer shown */}
         {userAnswer && !isCorrect && (
           <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
             <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
@@ -139,7 +137,6 @@ function ResolutionPanel({ q, userAnswer, isReview }) {
           </div>
         )}
 
-        {/* Resolution placeholder */}
         <div className="p-5 rounded-xl bg-surface-2 border border-surface-3 border-dashed flex flex-col items-center gap-3 text-center py-8">
           <span className="text-3xl">🚧</span>
           <div>
@@ -154,11 +151,10 @@ function ResolutionPanel({ q, userAnswer, isReview }) {
 
 // ─── Config phase ─────────────────────────────────────────────────────────────
 
-function ConfigPhase({ filters, quantity, setQuantity, onStart, onClose, error, loading }) {
+function ConfigPhase({ filters, quantity, setQuantity, reviewMode, setReviewMode, onStart, onClose, error, loading }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-surface-1 border border-surface-3 rounded-2xl w-full max-w-md shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-surface-3">
           <div>
             <h2 className="text-lg font-bold text-ink">Configurar Simulado</h2>
@@ -169,24 +165,70 @@ function ConfigPhase({ filters, quantity, setQuantity, onStart, onClose, error, 
           </button>
         </div>
 
-        {/* Quantity */}
-        <div className="px-6 py-5">
-          <p className="text-sm font-medium text-ink-2 mb-3">Quantidade de questões</p>
-          <div className="grid grid-cols-3 gap-2">
-            {QUANTITIES.map(q => (
-              <button key={q} onClick={() => setQuantity(q)}
-                className={`py-3 rounded-xl text-sm font-semibold border transition-all ${
-                  quantity === q
-                    ? 'bg-accent border-accent text-white'
-                    : 'border-surface-4 bg-surface-2 text-ink-2 hover:border-accent/50 hover:text-ink'
-                }`}>
-                {q} questões
-              </button>
-            ))}
+        <div className="px-6 py-5 space-y-5">
+          {/* Quantidade */}
+          <div>
+            <p className="text-sm font-medium text-ink-2 mb-3">Quantidade de questões</p>
+            <div className="grid grid-cols-3 gap-2">
+              {QUANTITIES.map(q => (
+                <button key={q} onClick={() => setQuantity(q)}
+                  className={`py-3 rounded-xl text-sm font-semibold border transition-all ${
+                    quantity === q
+                      ? 'bg-accent border-accent text-white'
+                      : 'border-surface-4 bg-surface-2 text-ink-2 hover:border-accent/50 hover:text-ink'
+                  }`}>
+                  {q} questões
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Filters summary */}
-          <div className="mt-5 p-3.5 rounded-xl bg-surface-2 border border-surface-3">
+          {/* Modo de revisão */}
+          <div>
+            <p className="text-sm font-medium text-ink-2 mb-3">Exibir gabarito e resolução</p>
+            <div className="space-y-2">
+              <button
+                onClick={() => setReviewMode('after-each')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                  reviewMode === 'after-each'
+                    ? 'bg-accent/10 border-accent/60 text-ink'
+                    : 'bg-surface-2 border-surface-4 text-ink-2 hover:border-accent/40 hover:bg-surface-3'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  reviewMode === 'after-each' ? 'border-accent' : 'border-surface-5'
+                }`}>
+                  {reviewMode === 'after-each' && <div className="w-2 h-2 rounded-full bg-accent" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium leading-tight">Após cada questão</p>
+                  <p className="text-xs text-ink-4 mt-0.5">Ver gabarito imediatamente ao responder</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setReviewMode('at-end')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                  reviewMode === 'at-end'
+                    ? 'bg-accent/10 border-accent/60 text-ink'
+                    : 'bg-surface-2 border-surface-4 text-ink-2 hover:border-accent/40 hover:bg-surface-3'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  reviewMode === 'at-end' ? 'border-accent' : 'border-surface-5'
+                }`}>
+                  {reviewMode === 'at-end' && <div className="w-2 h-2 rounded-full bg-accent" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium leading-tight">Apenas no final</p>
+                  <p className="text-xs text-ink-4 mt-0.5">Ver tudo só após finalizar o simulado</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Resumo de filtros */}
+          <div className="p-3.5 rounded-xl bg-surface-2 border border-surface-3">
             <p className="text-xs text-ink-4 uppercase tracking-wider mb-2">Filtros ativos</p>
             {[
               ['Matéria', filters.subject_area],
@@ -205,14 +247,13 @@ function ConfigPhase({ filters, quantity, setQuantity, onStart, onClose, error, 
           </div>
 
           {error && (
-            <div className="mt-4 flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30">
               <AlertTriangle size={14} className="text-rose-400 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-rose-300">{error}</p>
             </div>
           )}
         </div>
 
-        {/* Actions */}
         <div className="px-6 pb-6">
           <button onClick={onStart} disabled={loading}
             className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2">
@@ -228,9 +269,9 @@ function ConfigPhase({ filters, quantity, setQuantity, onStart, onClose, error, 
 
 function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose }) {
   const correct = questions.filter(q => answers[q.id] === q.correct_letter).length
-  const wrong   = questions.filter(q => answers[q.id] && answers[q.id] !== q.correct_letter).length
+  const wrong = questions.filter(q => answers[q.id] && answers[q.id] !== q.correct_letter).length
   const skipped = questions.filter(q => !answers[q.id]).length
-  const pct     = Math.round((correct / questions.length) * 100)
+  const pct = Math.round((correct / questions.length) * 100)
 
   const getResultStatus = (q) => {
     if (!answers[q.id]) return 'skipped'
@@ -239,15 +280,15 @@ function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose 
 
   const gradeColor =
     pct >= 70 ? 'text-emerald-400' :
-    pct >= 50 ? 'text-amber-400'   : 'text-rose-400'
+    pct >= 50 ? 'text-amber-400' : 'text-rose-400'
   const gradeMsg =
     pct >= 85 ? 'Excelente! 🏆' :
     pct >= 70 ? 'Muito bem! 👏' :
     pct >= 50 ? 'Continue praticando 💪' : 'Boa tentativa, continue estudando 📚'
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0d0e11] flex flex-col">
-      {/* Top bar */}
+    // bg-surface-0 garante fundo responsivo ao tema (claro/escuro)
+    <div className="fixed inset-0 z-50 bg-surface-0 flex flex-col">
       <div className="flex items-center justify-between px-8 py-4 border-b border-surface-3 bg-surface-1">
         <div className="flex items-center gap-3">
           <Trophy size={20} className="text-accent" />
@@ -258,31 +299,26 @@ function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose 
         </button>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-6 py-10">
-          {/* Score */}
           <div className="text-center mb-10">
             <div className={`text-7xl font-black mb-1 ${gradeColor}`}>{pct}%</div>
             <div className="text-2xl font-bold text-ink mb-2">
               {correct} <span className="text-ink-3 font-normal">de</span> {questions.length}
             </div>
             <p className="text-ink-3 text-sm">{gradeMsg}</p>
-
-            {/* Progress bar */}
             <div className="mt-5 h-3 bg-surface-3 rounded-full overflow-hidden max-w-xs mx-auto">
               <div className="h-full bg-gradient-to-r from-accent to-emerald-500 rounded-full transition-all duration-700"
                 style={{ width: `${pct}%` }} />
             </div>
           </div>
 
-          {/* Stat cards */}
           <div className="grid grid-cols-4 gap-3 mb-10">
             {[
-              { label: 'Corretas',   value: correct,          icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-              { label: 'Incorretas', value: wrong,            icon: XCircle,     color: 'text-rose-400',    bg: 'bg-rose-500/10'    },
-              { label: 'Em branco',  value: skipped,          icon: Minus,       color: 'text-ink-4',       bg: 'bg-surface-3'      },
-              { label: 'Tempo',      value: formatTime(elapsed), icon: Clock,    color: 'text-accent',      bg: 'bg-accent/10'      },
+              { label: 'Corretas', value: correct, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+              { label: 'Incorretas', value: wrong, icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10' },
+              { label: 'Em branco', value: skipped, icon: Minus, color: 'text-ink-4', bg: 'bg-surface-3' },
+              { label: 'Tempo', value: formatTime(elapsed), icon: Clock, color: 'text-accent', bg: 'bg-accent/10' },
             ].map(({ label, value, icon: Icon, color, bg }) => (
               <div key={label} className={`${bg} rounded-xl p-4 flex flex-col items-center gap-1.5`}>
                 <Icon size={18} className={color} />
@@ -292,7 +328,6 @@ function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose 
             ))}
           </div>
 
-          {/* Question grid */}
           <div className="mb-8">
             <p className="text-xs font-medium text-ink-4 uppercase tracking-wider mb-3">Gabarito resumido</p>
             <div className="flex flex-wrap gap-2">
@@ -300,7 +335,7 @@ function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose 
                 const status = getResultStatus(q)
                 const colors = {
                   correct: 'bg-emerald-500/80 text-white',
-                  wrong:   'bg-rose-500/80 text-white',
+                  wrong: 'bg-rose-500/80 text-white',
                   skipped: 'bg-surface-3 text-ink-4',
                 }
                 return (
@@ -322,7 +357,6 @@ function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose 
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3">
             <button onClick={() => onReview(0)}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold text-sm transition-all">
@@ -342,18 +376,20 @@ function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose 
 // ─── Main ExamMode ────────────────────────────────────────────────────────────
 
 export default function ExamMode({ filters, onClose }) {
-  const [phase,      setPhase]      = useState('config')
-  const [quantity,   setQuantity]   = useState(20)
-  const [questions,  setQuestions]  = useState([])
+  const [phase, setPhase] = useState('config')
+  const [quantity, setQuantity] = useState(20)
+  // 'after-each': mostra gabarito/resolução ao responder cada questão
+  // 'at-end': mostra apenas na revisão após finalizar
+  const [reviewMode, setReviewMode] = useState('after-each')
+  const [questions, setQuestions] = useState([])
   const [currentIdx, setCurrentIdx] = useState(0)
-  const [answers,    setAnswers]    = useState({})
-  const [flagged,    setFlagged]    = useState(new Set())
-  const [elapsed,    setElapsed]    = useState(0)
-  const [loadingQ,   setLoadingQ]   = useState(false)
-  const [error,      setError]      = useState(null)
+  const [answers, setAnswers] = useState({})
+  const [flagged, setFlagged] = useState(new Set())
+  const [elapsed, setElapsed] = useState(0)
+  const [loadingQ, setLoadingQ] = useState(false)
+  const [error, setError] = useState(null)
   const timerRef = useRef(null)
 
-  // ── Timer ──
   useEffect(() => {
     if (phase === 'exam') {
       timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -363,16 +399,15 @@ export default function ExamMode({ filters, onClose }) {
     return () => clearInterval(timerRef.current)
   }, [phase])
 
-  // ── Fetch questions ──
   const startExam = useCallback(async () => {
     setLoadingQ(true)
     setError(null)
     try {
       const params = new URLSearchParams({ page: 1, limit: quantity })
       if (filters.subject_area) params.set('subject_area', filters.subject_area)
-      if (filters.vestibular)   params.set('vestibular',   filters.vestibular)
-      if (filters.year)         params.set('year',         filters.year)
-      if (filters.topic)        params.set('topic',        filters.topic)
+      if (filters.vestibular) params.set('vestibular', filters.vestibular)
+      if (filters.year) params.set('year', filters.year)
+      if (filters.topic) params.set('topic', filters.topic)
       const result = await api.get(`/api/questions?${params}`)
       if (!result.data?.length) {
         setError('Nenhuma questão encontrada com esses filtros. Ajuste e tente novamente.')
@@ -393,15 +428,14 @@ export default function ExamMode({ filters, onClose }) {
     }
   }, [filters, quantity])
 
-  // ── Helpers ──
   const q = questions[currentIdx]
 
   const getStatus = useCallback((question) => {
     const hasAnswer = !!answers[question.id]
     const isFlagged = flagged.has(question.id)
     if (hasAnswer && isFlagged) return 'answered-flagged'
-    if (hasAnswer)  return 'answered'
-    if (isFlagged)  return 'flagged'
+    if (hasAnswer) return 'answered'
+    if (isFlagged) return 'flagged'
     return 'unanswered'
   }, [answers, flagged])
 
@@ -427,13 +461,14 @@ export default function ExamMode({ filters, onClose }) {
     setPhase('review')
   }, [])
 
-  // ── Config phase ──
   if (phase === 'config' || phase === 'loading') {
     return (
       <ConfigPhase
         filters={filters}
         quantity={quantity}
         setQuantity={setQuantity}
+        reviewMode={reviewMode}
+        setReviewMode={setReviewMode}
         onStart={startExam}
         onClose={onClose}
         error={error}
@@ -442,7 +477,6 @@ export default function ExamMode({ filters, onClose }) {
     )
   }
 
-  // ── Results phase ──
   if (phase === 'results') {
     return (
       <ResultsPhase
@@ -456,17 +490,24 @@ export default function ExamMode({ filters, onClose }) {
     )
   }
 
-  // ── Exam & Review phases ──
-  const isReview   = phase === 'review'
+  const isReview = phase === 'review'
   const userAnswer = answers[q?.id]
-  const answered   = questions.filter(qq => !!answers[qq.id]).length
-  const flagCount  = flagged.size
+  const answered = questions.filter(qq => !!answers[qq.id]).length
+  const flagCount = flagged.size
 
-  // Show resolution panel when question is answered (exam) or always in review
-  const showResolution = isReview || !!userAnswer
+  // Painel de resolução:
+  // - sempre visível na fase de revisão (após finalizar)
+  // - modo 'after-each': aparece logo ao responder cada questão
+  // - modo 'at-end': nunca durante o simulado (só na revisão)
+  const showResolution = isReview || (reviewMode === 'after-each' && !!userAnswer)
 
   const getOptionState = (letter) => {
     if (!isReview) {
+      if (reviewMode === 'after-each' && userAnswer) {
+        if (letter === q.correct_letter) return 'correct'
+        if (userAnswer === letter && userAnswer !== q.correct_letter) return 'wrong'
+        return 'idle'
+      }
       return userAnswer === letter ? 'selected' : 'idle'
     }
     if (letter === q.correct_letter) return 'correct'
@@ -475,7 +516,8 @@ export default function ExamMode({ filters, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0d0e11] flex flex-col" style={{ fontFamily: 'Arial, sans-serif' }}>
+    // bg-surface-0 responde ao tema: escuro em dark mode, claro em light mode
+    <div className="fixed inset-0 z-50 bg-surface-0 flex flex-col">
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-5 py-2.5 border-b border-surface-3 bg-surface-1 flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -493,6 +535,15 @@ export default function ExamMode({ filters, onClose }) {
         </div>
 
         <div className="flex items-center gap-3">
+          {!isReview && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-2 border border-surface-3 text-xs text-ink-4">
+              {reviewMode === 'after-each'
+                ? <><Eye size={12} /> Gabarito após cada questão</>
+                : <><EyeOff size={12} /> Gabarito só no final</>
+              }
+            </div>
+          )}
+
           {!isReview && (
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-2 border border-surface-3 text-sm font-mono ${
               elapsed > 3600 ? 'text-amber-400' : 'text-ink-2'
@@ -532,7 +583,7 @@ export default function ExamMode({ filters, onClose }) {
       {/* ── Body ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Left Sidebar (question navigator) ── */}
+        {/* ── Sidebar ── */}
         <div className="w-[200px] flex-shrink-0 bg-surface-1 border-r border-surface-3 flex flex-col">
           <div className="px-3 pt-3 pb-2 border-b border-surface-3">
             <p className="text-[11px] text-ink-4 uppercase tracking-wider mb-1.5">Questões</p>
@@ -564,15 +615,15 @@ export default function ExamMode({ filters, onClose }) {
                 let reviewStyle = ''
                 if (isReview) {
                   reviewStyle = status === 'correct-review' ? 'bg-emerald-500/70 text-white hover:bg-emerald-500' :
-                               status === 'wrong-review'   ? 'bg-rose-500/70 text-white hover:bg-rose-500' :
-                               'bg-surface-3 text-ink-4 hover:bg-surface-4'
+                    status === 'wrong-review' ? 'bg-rose-500/70 text-white hover:bg-rose-500' :
+                    'bg-surface-3 text-ink-4 hover:bg-surface-4'
                 }
 
                 return isReview ? (
                   <button key={qq.id} onClick={() => setCurrentIdx(i)}
                     className={`w-9 h-9 rounded-lg text-xs font-semibold transition-all flex items-center justify-center
-                      ${reviewStyle}
-                      ${i === currentIdx ? 'ring-2 ring-white ring-offset-1 ring-offset-surface-1' : ''}`}>
+                    ${reviewStyle}
+                    ${i === currentIdx ? 'ring-2 ring-white ring-offset-1 ring-offset-surface-1' : ''}`}>
                     {i + 1}
                   </button>
                 ) : (
@@ -590,8 +641,8 @@ export default function ExamMode({ filters, onClose }) {
 
           <div className="px-3 pb-3 pt-2 border-t border-surface-3 space-y-1.5">
             {!isReview ? [
-              ['bg-surface-3',    'Não respondida'],
-              ['bg-accent/80',    'Respondida'],
+              ['bg-surface-3', 'Não respondida'],
+              ['bg-accent/80', 'Respondida'],
               ['bg-amber-500/80', 'Para revisar'],
             ].map(([c, l]) => (
               <div key={l} className="flex items-center gap-2">
@@ -600,8 +651,8 @@ export default function ExamMode({ filters, onClose }) {
               </div>
             )) : [
               ['bg-emerald-500/70', 'Correta'],
-              ['bg-rose-500/70',    'Incorreta'],
-              ['bg-surface-3',      'Em branco'],
+              ['bg-rose-500/70', 'Incorreta'],
+              ['bg-surface-3', 'Em branco'],
             ].map(([c, l]) => (
               <div key={l} className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded ${c} flex-shrink-0`} />
@@ -662,18 +713,18 @@ export default function ExamMode({ filters, onClose }) {
                   )}
                 </div>
 
-                {/* Image */}
+                {/* Enunciado — aparece ANTES da imagem */}
+                <div className="text-ink mb-5 whitespace-pre-wrap leading-[1.85]" style={{ fontSize: '17px' }}>
+                  {q.statement}
+                </div>
+
+                {/* Imagem — aparece ENTRE enunciado e alternativas */}
                 {q.image_url && (
-                  <div className="mb-5 flex justify-center">
+                  <div className="mb-6 flex justify-center">
                     <img src={q.image_url} alt="Imagem da questão"
                       className="max-w-full max-h-72 rounded-xl border border-surface-3 object-contain" />
                   </div>
                 )}
-
-                {/* Statement */}
-                <div className="text-ink mb-6 whitespace-pre-wrap leading-[1.85]" style={{ fontSize: '17px' }}>
-                  {q.statement}
-                </div>
 
                 {/* Options */}
                 <div className="space-y-3 mb-8">
@@ -685,7 +736,7 @@ export default function ExamMode({ filters, onClose }) {
                         letter={opt.letter}
                         text={opt.text}
                         state={getOptionState(opt.letter)}
-                        disabled={isReview || !!userAnswer}
+                        disabled={isReview || (reviewMode === 'after-each' && !!userAnswer)}
                         onClick={() => !isReview && !userAnswer && setAnswer(q.id, opt.letter)}
                       />
                     ))

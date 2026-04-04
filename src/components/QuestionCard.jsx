@@ -8,17 +8,17 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E']
 function OptionButton({ letter, text, state, onClick }) {
   // state: 'idle' | 'selected' | 'correct' | 'wrong' | 'reveal-correct'
   const styles = {
-    idle:           'border-surface-5 bg-surface-3 hover:border-accent/50 hover:bg-accent/5 cursor-pointer',
-    selected:       'border-accent/60 bg-accent/10 cursor-pointer',
-    correct:        'border-success/60 bg-success/10',
-    wrong:          'border-error/60 bg-error/10',
+    idle: 'border-surface-5 bg-surface-3 hover:border-accent/50 hover:bg-accent/5 cursor-pointer',
+    selected: 'border-accent/60 bg-accent/10 cursor-pointer',
+    correct: 'border-success/60 bg-success/10',
+    wrong: 'border-error/60 bg-error/10',
     'reveal-correct': 'border-success/40 bg-success/5',
   }
   const letterStyles = {
-    idle:           'bg-surface-4 text-ink-3',
-    selected:       'bg-accent/20 text-accent',
-    correct:        'bg-success/20 text-success',
-    wrong:          'bg-error/20 text-error',
+    idle: 'bg-surface-4 text-ink-3',
+    selected: 'bg-accent/20 text-accent',
+    correct: 'bg-success/20 text-success',
+    wrong: 'bg-error/20 text-error',
     'reveal-correct': 'bg-success/15 text-success',
   }
 
@@ -33,25 +33,25 @@ function OptionButton({ letter, text, state, onClick }) {
       </span>
       <span className={`text-sm leading-relaxed mt-0.5 transition-colors ${
         state === 'correct' ? 'text-success font-medium' :
-        state === 'wrong'   ? 'text-error' :
+        state === 'wrong' ? 'text-error' :
         state === 'reveal-correct' ? 'text-success/80' :
         'text-ink-2'
       }`}>{text}</span>
       {state === 'correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success" />}
-      {state === 'wrong'   && <XCircle      size={16} className="shrink-0 ml-auto mt-0.5 text-error"   />}
+      {state === 'wrong' && <XCircle size={16} className="shrink-0 ml-auto mt-0.5 text-error" />}
       {state === 'reveal-correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success/60" />}
     </button>
   )
 }
 
 export default function QuestionCard({ question, index, previousAnswer }) {
-  const [chosen,    setChosen]    = useState(previousAnswer?.answer_given ?? null)
+  const [chosen, setChosen] = useState(previousAnswer?.answer_given ?? null)
   const [submitted, setSubmitted] = useState(!!previousAnswer)
-  const [saving,    setSaving]    = useState(false)
-  const [favorite,  setFavorite]  = useState(false)
-  const [imgError,  setImgError]  = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [favorite, setFavorite] = useState(false)
+  const [imgError, setImgError] = useState(false)
 
-  const correct   = question.correct_letter?.trim()
+  const correct = question.correct_letter?.trim()
   const isCorrect = submitted && chosen === correct
 
   const options = [...(question.options ?? [])]
@@ -61,7 +61,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
     if (!submitted) return chosen === letter ? 'selected' : 'idle'
     if (letter === correct) return 'correct'
     if (letter === chosen && chosen !== correct) return 'wrong'
-    return 'reveal-correct'  // show all correct option subtly
+    return 'reveal-correct' // show all correct option subtly
   }
 
   async function handleSubmit() {
@@ -76,7 +76,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
   async function toggleFavorite() {
     try {
       if (favorite) { await api.delete(`/api/favorites/${question.id}`); setFavorite(false) }
-      else          { await api.post(`/api/favorites/${question.id}`);   setFavorite(true)  }
+      else { await api.post(`/api/favorites/${question.id}`); setFavorite(true) }
     } catch {}
   }
 
@@ -123,7 +123,12 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </button>
       </div>
 
-      {/* Imagem (badges → imagem → enunciado) */}
+      {/* Enunciado */}
+      <div className="mb-4">
+        <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{question.statement}</p>
+      </div>
+
+      {/* Imagem — entre o enunciado e as alternativas */}
       {question.image_url && !imgError && (
         <div className="mb-4 rounded-xl overflow-hidden border border-surface-5 bg-surface-3">
           <img
@@ -139,11 +144,6 @@ export default function QuestionCard({ question, index, previousAnswer }) {
           <ImageOff size={15} /> Imagem indisponível
         </div>
       )}
-
-      {/* Enunciado */}
-      <div className="mb-5">
-        <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{question.statement}</p>
-      </div>
 
       {/* Alternativas */}
       <div className="space-y-2 mb-4">
@@ -176,7 +176,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
           <div className="flex items-center gap-2 mb-2">
             {isCorrect
               ? <><CheckCircle2 size={16} className="text-success" /><span className="text-sm font-semibold text-success">Correto! 🎉</span></>
-              : <><XCircle      size={16} className="text-error"   /><span className="text-sm font-semibold text-error">Incorreto — gabarito: <strong>{correct}</strong></span></>
+              : <><XCircle size={16} className="text-error" /><span className="text-sm font-semibold text-error">Incorreto — gabarito: <strong>{correct}</strong></span></>
             }
           </div>
           {question.explanation && (
