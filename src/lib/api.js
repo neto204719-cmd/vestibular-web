@@ -62,7 +62,8 @@ export async function* streamPost(path, body) {
     buffer = lines.pop() ?? ''
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue
-      try { yield JSON.parse(line.slice(6)) } catch { /* linha malformada */ }
+      const payload = line.slice(6).trim() // remove "data: " prefix + \r de \r\n
+      try { yield JSON.parse(payload) } catch { /* linha malformada */ }
     }
   }
 }
