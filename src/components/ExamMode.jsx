@@ -855,7 +855,7 @@ export default function ExamMode({ filters, onClose }) {
                       <OptionButton
                         key={opt.letter}
                         letter={opt.letter}
-                        text={opt.text}
+                        text={opt.text?.replace(/^[a-e]\)\s*/i, '')}
                         state={getOptionState(opt.letter)}
                         disabled={isReview || (reviewMode === 'after-each' && !!userAnswer)}
                         onClick={() => !isReview && !userAnswer && setAnswer(q.id, opt.letter)}

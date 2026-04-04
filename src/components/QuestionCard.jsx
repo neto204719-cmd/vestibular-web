@@ -245,7 +245,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
           <OptionButton
             key={opt.letter}
             letter={opt.letter}
-            text={opt.text}
+            text={opt.text?.replace(/^[a-e]\)\s*/i, '')}
             state={getOptionState(opt.letter)}
             onClick={() => { if (!submitted) setChosen(opt.letter) }}
           />
