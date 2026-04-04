@@ -38,7 +38,7 @@ export default function QuestionChat({
     setOpen(true)
     // Coloca o trecho entre parênteses no input; preserva o que já estava digitado
     setInput(prev => {
-      const insertion = `("${selectionContext.text}")`
+      const insertion = `"${selectionContext.text}"`
       return prev.trim() ? `${prev.trim()} ${insertion}` : insertion
     })
     setTimeout(() => inputRef.current?.focus(), 200)
