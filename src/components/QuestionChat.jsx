@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react'
-import { api } from '../lib/api'
+import ReactMarkdown from 'react-markdown'
+import { streamPost } from '../lib/api'
 
 /**
  * QuestionChat — chat com o Tutor sobre uma questão específica.
@@ -73,11 +74,41 @@ export default function QuestionChat({
         text,
       ].join('\n')
 
-      console.log('[QuestionChat] sendMessage → chamando /api/chat', { text, context })
-      // questionId permite ao backend separar o histórico por questão
-      const data = await api.post('/api/chat', { message: context, questionId: question.id })
-      console.log('[QuestionChat] resposta recebida', data)
-      setMsgs(m => [...m, { role: 'assistant', text: data.text ?? data.message ?? data.reply ?? JSON.stringify(data) }])
+      let streamingIdx = null // índice da mensagem em streaming
+
+      for await (const ev of streamPost('/api/chat', { message: context, questionId: question.id })) {
+        if (ev.error) {
+          throw new Error(ev.error)
+        }
+
+        if (ev.text !== undefined) {
+          // Primeiro chunk: desliga o loading e cria a mensagem placeholder
+          if (streamingIdx === null) {
+            setLoading(false)
+            setMsgs(m => {
+              streamingIdx = m.length
+              return [...m, { role: 'assistant', text: ev.text, streaming: true }]
+            })
+          } else {
+            // Chunks subsequentes: acumula no mesmo item
+            setMsgs(m => m.map((msg, i) =>
+              i === streamingIdx ? { ...msg, text: msg.text + ev.text } : msg
+            ))
+          }
+        }
+
+        if (ev.done) {
+          // Finaliza — remove a flag streaming
+          setMsgs(m => m.map((msg, i) =>
+            i === streamingIdx ? { ...msg, streaming: false } : msg
+          ))
+        }
+      }
+
+      // Se nenhum chunk chegou (resposta vazia), garante que loading seja limpo
+      if (streamingIdx === null) {
+        setMsgs(m => [...m, { role: 'assistant', text: '(sem resposta)' }])
+      }
     } catch (err) {
       console.error('[QuestionChat] erro ao chamar /api/chat', err)
       setMsgs(m => [...m, { role: 'assistant', text: `⚠️ ${err.message}`, error: true }])
@@ -120,7 +151,7 @@ export default function QuestionChat({
             )}
             {msgs.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[88%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
+                <div className={`max-w-[88%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed
                   ${m.role === 'user'
                     ? 'bg-accent text-white rounded-br-sm'
                     : m.error
@@ -128,7 +159,39 @@ export default function QuestionChat({
                       : 'bg-surface-3 text-ink rounded-bl-sm'
                   }`}
                 >
-                  {m.text}
+                  {m.role === 'user' ? (
+                    <span className="whitespace-pre-wrap">{m.text}</span>
+                  ) : (
+                    <ReactMarkdown
+                      components={{
+                        // Parágrafos
+                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                        // Negrito
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        // Itálico
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        // Código inline
+                        code: ({ inline, children }) => inline
+                          ? <code className="px-1 py-0.5 rounded bg-surface-2 text-accent text-xs font-mono">{children}</code>
+                          : <code>{children}</code>,
+                        // Bloco de código
+                        pre: ({ children }) => (
+                          <pre className="my-2 p-3 rounded-xl bg-surface-2 text-xs font-mono overflow-x-auto">{children}</pre>
+                        ),
+                        // Listas não-ordenadas
+                        ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
+                        // Listas ordenadas
+                        ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
+                        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                        // Headings
+                        h1: ({ children }) => <p className="font-bold text-base mb-1">{children}</p>,
+                        h2: ({ children }) => <p className="font-bold mb-1">{children}</p>,
+                        h3: ({ children }) => <p className="font-semibold mb-1">{children}</p>,
+                      }}
+                    >
+                      {m.text}
+                    </ReactMarkdown>
+                  )}
                 </div>
               </div>
             ))}

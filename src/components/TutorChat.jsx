@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Send, Loader2, GraduationCap, GripHorizontal } from 'lucide-react'
-import { api } from '../lib/api'
+import { streamPost } from '../lib/api'
 
 export default function TutorChat({ open, onClose }) {
   const [msgs,     setMsgs]     = useState([])
@@ -68,8 +68,35 @@ export default function TutorChat({ open, onClose }) {
     setMsgs(m => [...m, { role: 'user', text }])
     setLoading(true)
     try {
-      const data = await api.post('/api/chat', { message: text })
-      setMsgs(m => [...m, { role: 'assistant', text: data.text }])
+      let streamingIdx = null
+
+      for await (const ev of streamPost('/api/chat', { message: text })) {
+        if (ev.error) throw new Error(ev.error)
+
+        if (ev.text !== undefined) {
+          if (streamingIdx === null) {
+            setLoading(false)
+            setMsgs(m => {
+              streamingIdx = m.length
+              return [...m, { role: 'assistant', text: ev.text, streaming: true }]
+            })
+          } else {
+            setMsgs(m => m.map((msg, i) =>
+              i === streamingIdx ? { ...msg, text: msg.text + ev.text } : msg
+            ))
+          }
+        }
+
+        if (ev.done) {
+          setMsgs(m => m.map((msg, i) =>
+            i === streamingIdx ? { ...msg, streaming: false } : msg
+          ))
+        }
+      }
+
+      if (streamingIdx === null) {
+        setMsgs(m => [...m, { role: 'assistant', text: '(sem resposta)' }])
+      }
     } catch (err) {
       setMsgs(m => [...m, { role: 'assistant', text: `⚠️ ${err.message}`, error: true }])
     } finally { setLoading(false) }
