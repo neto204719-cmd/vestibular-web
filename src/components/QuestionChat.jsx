@@ -65,14 +65,26 @@ export default function QuestionChat({
 
   async function sendMessage(text) {
     setLoading(true)
-    const answerCtx = userAnswer
-      ? `Gabarito: ${question.correct_letter}\nResposta do aluno: ${userAnswer}`
-      : ''
-    const context = `[Contexto da questão]\nMatéria: ${question.subject_area ?? question.subject}\nAssunto: ${question.topic ?? '—'}\nEnunciado: ${question.statement.slice(0, 400)}\n${answerCtx}\n\n${text}`
     try {
+      const answerCtx = userAnswer
+        ? `Gabarito: ${question.correct_letter}\nResposta do aluno: ${userAnswer}`
+        : ''
+      const context = [
+        '[Contexto da questão]',
+        `Matéria: ${question.subject_area ?? question.subject ?? '—'}`,
+        `Assunto: ${question.topic ?? '—'}`,
+        `Enunciado: ${question.statement?.slice(0, 400) ?? '(sem enunciado)'}`,
+        answerCtx,
+        '',
+        text,
+      ].join('\n')
+
+      console.log('[QuestionChat] sendMessage → chamando /api/chat', { text, context })
       const data = await api.post('/api/chat', { message: context })
-      setMsgs(m => [...m, { role: 'assistant', text: data.text }])
+      console.log('[QuestionChat] resposta recebida', data)
+      setMsgs(m => [...m, { role: 'assistant', text: data.text ?? data.message ?? data.reply ?? JSON.stringify(data) }])
     } catch (err) {
+      console.error('[QuestionChat] erro ao chamar /api/chat', err)
       setMsgs(m => [...m, { role: 'assistant', text: `⚠️ ${err.message}`, error: true }])
     } finally {
       setLoading(false)
