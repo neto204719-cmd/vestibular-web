@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap, Minus } from 'lucide-react'
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
+import { renderWithHighlights } from '../lib/renderHighlights'
 
 // ─── Popup flutuante de seleção de texto ──────────────────────────────────────
 
@@ -90,21 +91,32 @@ export default function QuestionCard({ question, index, previousAnswer }) {
   const [favorite,  setFavorite]  = useState(false)
   const [imgError,  setImgError]  = useState(false)
 
-  // ── Seleção de texto → Perguntar ao Tutor ──
-  const statementRef = useRef(null)
-  const [selPopup,        setSelPopup]        = useState(null) // { rect, text }
-  const [selectionContext, setSelectionContext] = useState(null) // { text, id }
+  // ── Seleção de texto → grifo amarelo + Perguntar ao Tutor ──
+  const statementRef   = useRef(null)
+  const [selPopup,         setSelPopup]         = useState(null)  // { rect, text }
+  const [selectionContext, setSelectionContext]  = useState(null)  // { text, id }
+  const [highlights,       setHighlights]        = useState([])    // trechos grifados
+  // Ref para acesso sem stale closure dentro do useEffect
+  const highlightsRef = useRef([])
+  useEffect(() => { highlightsRef.current = highlights }, [highlights])
 
   useEffect(() => {
     function onMouseUp() {
       setTimeout(() => {
         const sel = window.getSelection()
         const text = sel?.toString().trim()
-        if (!text || !statementRef.current?.contains(sel.anchorNode)) {
-          return
-        }
+        if (!text || !statementRef.current?.contains(sel.anchorNode)) return
         const rect = sel.getRangeAt(0).getBoundingClientRect()
-        setSelPopup({ rect, text })
+
+        if (highlightsRef.current.includes(text)) {
+          // Toggle: remove o grifo e não mostra popup
+          setHighlights(h => h.filter(t => t !== text))
+          window.getSelection()?.removeAllRanges()
+        } else {
+          // Novo grifo: adiciona e mostra popup
+          setHighlights(h => [...h, text])
+          setSelPopup({ rect, text })
+        }
       }, 10)
     }
 
@@ -200,10 +212,10 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </button>
       </div>
 
-      {/* Enunciado — suporte a seleção de texto */}
+      {/* Enunciado — seleção gera grifo amarelo (toggle) */}
       <div className="mb-4" ref={statementRef}>
         <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap select-text">
-          {question.statement}
+          {renderWithHighlights(question.statement, highlights)}
         </p>
       </div>
 

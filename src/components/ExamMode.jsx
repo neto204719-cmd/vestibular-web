@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
+import { renderWithHighlights } from '../lib/renderHighlights'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -445,17 +446,23 @@ export default function ExamMode({ filters, onClose }) {
   const [error, setError] = useState(null)
   const timerRef = useRef(null)
 
-  // ── Seleção de texto → Perguntar ao Tutor ──
+  // ── Seleção de texto → grifo amarelo (toggle) + Perguntar ao Tutor ──
   const statementRef = useRef(null)
-  const [selPopup, setSelPopup] = useState(null)           // { rect, text }
-  const [selectionContext, setSelectionContext] = useState(null) // { text, id }
-  const [forceShowPanel, setForceShowPanel] = useState(false)
+  const [selPopup,         setSelPopup]         = useState(null)  // { rect, text }
+  const [selectionContext, setSelectionContext]  = useState(null)  // { text, id }
+  const [forceShowPanel,   setForceShowPanel]    = useState(false)
+  const [highlights,       setHighlights]        = useState([])    // trechos grifados
+  // Ref para acesso sem stale closure dentro do useEffect
+  const highlightsRef = useRef([])
+  useEffect(() => { highlightsRef.current = highlights }, [highlights])
 
-  // Reseta seleção ao trocar de questão
+  // Reseta seleção e grifos ao trocar de questão
   useEffect(() => {
     setSelPopup(null)
     setSelectionContext(null)
     setForceShowPanel(false)
+    setHighlights([])
+    highlightsRef.current = []
   }, [currentIdx])
 
   useEffect(() => {
@@ -465,7 +472,16 @@ export default function ExamMode({ filters, onClose }) {
         const text = sel?.toString().trim()
         if (!text || !statementRef.current?.contains(sel.anchorNode)) return
         const rect = sel.getRangeAt(0).getBoundingClientRect()
-        setSelPopup({ rect, text })
+
+        if (highlightsRef.current.includes(text)) {
+          // Toggle: remove o grifo e não mostra popup
+          setHighlights(h => h.filter(t => t !== text))
+          window.getSelection()?.removeAllRanges()
+        } else {
+          // Novo grifo: adiciona e mostra popup
+          setHighlights(h => [...h, text])
+          setSelPopup({ rect, text })
+        }
       }, 10)
     }
 
@@ -815,9 +831,9 @@ export default function ExamMode({ filters, onClose }) {
                   )}
                 </div>
 
-                {/* Enunciado — suporte a seleção de texto */}
+                {/* Enunciado — seleção gera grifo amarelo (toggle) */}
                 <div ref={statementRef} className="text-ink mb-5 whitespace-pre-wrap leading-[1.85] select-text" style={{ fontSize: '17px' }}>
-                  {q.statement}
+                  {renderWithHighlights(q.statement, highlights)}
                 </div>
 
                 {/* Popup flutuante de seleção */}

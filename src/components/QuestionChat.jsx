@@ -29,16 +29,19 @@ export default function QuestionChat({
   // Controla qual selectionContext já foi processado (pelo id)
   const prevSelIdRef = useRef(null)
 
-  // ── Reage ao grifo: auto-abre e envia o trecho selecionado ──
+  // ── Reage ao grifo: abre o chat e preenche o input com o trecho ──
+  // Não envia automaticamente — o aluno edita e manda quando quiser.
   useEffect(() => {
     if (!selectionContext) return
     if (selectionContext.id === prevSelIdRef.current) return
     prevSelIdRef.current = selectionContext.id
-    const msg = `Sobre este trecho do enunciado:\n"${selectionContext.text}"\n\nPode me explicar melhor?`
     setOpen(true)
-    setMsgs(m => [...m, { role: 'user', text: msg }])
-    sendMessage(msg)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Coloca o trecho entre parênteses no input; preserva o que já estava digitado
+    setInput(prev => {
+      const insertion = `("${selectionContext.text}")`
+      return prev.trim() ? `${prev.trim()} ${insertion}` : insertion
+    })
+    setTimeout(() => inputRef.current?.focus(), 200)
   }, [selectionContext])
 
   useEffect(() => {
