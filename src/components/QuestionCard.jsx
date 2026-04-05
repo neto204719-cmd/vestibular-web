@@ -69,12 +69,12 @@ function OptionButton({ letter, text, state, onClick }) {
       <span className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${letterStyles[state]}`}>
         {letter}
       </span>
-      <span className={`text-sm leading-relaxed mt-0.5 transition-colors ${
+      <span className={`leading-relaxed mt-0.5 transition-colors ${
         state === 'correct'        ? 'text-success font-medium' :
         state === 'wrong'          ? 'text-error' :
         state === 'reveal-correct' ? 'text-success/80' :
         'text-ink-2'
-      }`}>{text}</span>
+      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>{text}</span>
       {state === 'correct'        && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success" />}
       {state === 'wrong'          && <XCircle      size={16} className="shrink-0 ml-auto mt-0.5 text-error" />}
       {state === 'reveal-correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success/60" />}
@@ -214,7 +214,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
 
       {/* Enunciado — seleção gera grifo amarelo (toggle) */}
       <div className="mb-4" ref={statementRef}>
-        <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap select-text">
+        <p className="text-ink leading-relaxed whitespace-pre-wrap select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>
           {renderWithHighlights(question.statement, highlights)}
         </p>
       </div>
