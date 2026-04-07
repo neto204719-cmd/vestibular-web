@@ -7,6 +7,7 @@ import Questoes   from './pages/Questoes'
 import Desempenho from './pages/Desempenho'
 import Plano      from './pages/Plano'
 import Config     from './pages/Config'
+import Tutor      from './pages/Tutor'
 import Admin      from './pages/Admin'
 
 const ADMIN_EMAILS = new Set(
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="/desempenho" element={<Desempenho />} />
         <Route path="/plano"      element={<Plano />} />
         <Route path="/config"     element={<Config />} />
+        <Route path="/tutor"      element={<Tutor />} />
         {/* Admin — only accessible to ADMIN_EMAILS, redirects others to /dashboard */}
         <Route path="/admin" element={<AdminGuard><Admin /></AdminGuard>} />
       </Route>

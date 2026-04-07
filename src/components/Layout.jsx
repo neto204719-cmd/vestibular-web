@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { LayoutDashboard, BookOpen, BarChart2, CalendarDays, Settings, LogOut, MessageCircle, ChevronLeft, GraduationCap, ShieldAlert } from 'lucide-react'
+import { LayoutDashboard, BookOpen, BarChart2, CalendarDays, Settings, LogOut, MessageCircle, ChevronLeft, GraduationCap, ShieldAlert, Sparkles } from 'lucide-react'
 import TutorChat from './TutorChat'
 
 import { isAdminEmail } from '../App'
@@ -11,6 +11,7 @@ const NAV = [
   { to: '/questoes',   icon: BookOpen,         label: 'Banco de Questões' },
   { to: '/desempenho', icon: BarChart2,         label: 'Desempenho'        },
   { to: '/plano',      icon: CalendarDays,      label: 'Plano de Estudos'  },
+  { to: '/tutor',      icon: Sparkles,          label: 'Tutor'             },
   { to: '/config',     icon: Settings,          label: 'Configurações'     },
 ]
 
