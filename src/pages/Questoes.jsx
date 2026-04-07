@@ -13,6 +13,30 @@ const EMPTY_FILTERS = {
   onlyImages: false, onlyWrong: false, onlyFavorites: false,
 }
 
+/* ── Skeleton Card ── */
+function SkeletonCard() {
+  return (
+    <div className="card space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="skeleton h-5 w-16" />
+        <div className="skeleton h-5 w-24" />
+        <div className="skeleton h-5 w-20 ml-auto" />
+      </div>
+      <div className="space-y-2.5">
+        <div className="skeleton h-4 w-full" />
+        <div className="skeleton h-4 w-5/6" />
+        <div className="skeleton h-4 w-4/6" />
+      </div>
+      <div className="space-y-2 pt-2">
+        <div className="skeleton h-11 w-full rounded-xl" />
+        <div className="skeleton h-11 w-full rounded-xl" />
+        <div className="skeleton h-11 w-full rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
+/* ── Pagination ── */
 function Pagination({ page, pages, total, onPage }) {
   if (pages <= 1) return null
   const nums = []
@@ -21,28 +45,51 @@ function Pagination({ page, pages, total, onPage }) {
     else if (nums[nums.length - 1] !== '…') nums.push('…')
   }
   return (
-    <div className="flex items-center justify-center gap-1.5 py-6">
-      <button onClick={() => onPage(page - 1)} disabled={page === 1}
-        className="btn-ghost px-2 py-2 disabled:opacity-30"><ChevronLeft size={16} /></button>
+    <div className="flex items-center justify-center gap-2 py-8">
+      <button
+        onClick={() => onPage(page - 1)}
+        disabled={page === 1}
+        className="btn-ghost px-2.5 py-2.5 disabled:opacity-20 rounded-xl"
+      >
+        <ChevronLeft size={16} />
+      </button>
 
       {nums.map((n, i) =>
         n === '…'
-          ? <span key={`e${i}`} className="px-1 text-ink-4 text-sm">…</span>
-          : <button key={n} onClick={() => onPage(n)}
-              className={`w-8 h-8 rounded-lg text-sm font-medium transition-all
-                ${n === page ? 'bg-accent text-white' : 'text-ink-2 hover:bg-surface-3 hover:text-ink'}`}>
+          ? <span key={`e${i}`} className="px-1.5 text-ink-4 text-sm select-none">…</span>
+          : <button
+              key={n}
+              onClick={() => onPage(n)}
+              className={`w-9 h-9 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                n === page
+                  ? 'text-white'
+                  : 'text-ink-3 hover:text-ink hover:bg-white/[0.05]'
+              }`}
+              style={n === page ? {
+                background: 'linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-rgb) / 0.8))',
+                boxShadow: '0 2px 12px rgb(var(--accent-rgb) / 0.3)',
+              } : undefined}
+            >
               {n}
             </button>
       )}
 
-      <button onClick={() => onPage(page + 1)} disabled={page === pages}
-        className="btn-ghost px-2 py-2 disabled:opacity-30"><ChevronRight size={16} /></button>
+      <button
+        onClick={() => onPage(page + 1)}
+        disabled={page === pages}
+        className="btn-ghost px-2.5 py-2.5 disabled:opacity-20 rounded-xl"
+      >
+        <ChevronRight size={16} />
+      </button>
 
-      <span className="text-xs text-ink-4 ml-2">{total} questões</span>
+      <span className="text-[11px] text-ink-4 ml-3 font-medium tabular-nums">
+        {total.toLocaleString('pt-BR')} questões
+      </span>
     </div>
   )
 }
 
+/* ── Main ── */
 export default function Questoes() {
   const [filters,       setFilters]       = useState(EMPTY_FILTERS)
   const [pendingFilters,setPendingFilters] = useState(EMPTY_FILTERS)
@@ -84,7 +131,7 @@ export default function Questoes() {
     }
   }, [])
 
-  // Aplica filtros com debounce no campo topic (texto livre)
+  // Debounce topic filter
   useEffect(() => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -99,12 +146,8 @@ export default function Questoes() {
     topRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [filters, page, fetchQuestions])
 
-  function handleFilterChange(f) {
-    setPendingFilters(f)
-  }
-  function handleReset() {
-    setPendingFilters(EMPTY_FILTERS)
-  }
+  function handleFilterChange(f) { setPendingFilters(f) }
+  function handleReset() { setPendingFilters(EMPTY_FILTERS) }
   function handlePage(p) {
     if (p < 1 || p > pages) return
     setPage(p)
@@ -118,36 +161,62 @@ export default function Questoes() {
     <>
     <div ref={topRef} className="animate-fade-in">
       {/* ── Topbar ── */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-4 mb-8">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Banco de Questões</h1>
-          <p className="text-sm text-ink-3 mt-0.5">
-            {loading ? 'Carregando...' : fetchError ? `Erro: ${fetchError}` : `${total.toLocaleString('pt-BR')} questões disponíveis`}
+          <h1 className="font-heading text-3xl font-bold text-ink tracking-tight">
+            Banco de Questões
+          </h1>
+          <p className="text-[13px] text-ink-3 mt-1">
+            {loading
+              ? 'Carregando...'
+              : fetchError
+                ? `Erro: ${fetchError}`
+                : (
+                    <span className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-ink-2 font-medium">
+                        {total.toLocaleString('pt-BR')}
+                      </span>
+                      <span className="text-ink-4">questões disponíveis</span>
+                    </span>
+                  )
+            }
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Toggle sidebar (fora do modo foco) */}
+          {/* Toggle sidebar */}
           {!focusMode && (
             <button
               onClick={() => setSidebarOpen(v => !v)}
-              className={`btn-ghost relative ${activeFilterCount > 0 ? 'text-accent' : ''}`}
+              className={`btn-ghost relative rounded-xl ${activeFilterCount > 0 ? 'text-accent' : ''}`}
               title={sidebarOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
             >
               {sidebarOpen ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
               <Filter size={17} />
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full text-white text-[10px] flex items-center justify-center font-bold">
+                <span
+                  className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full text-white text-[9px] flex items-center justify-center font-bold"
+                  style={{
+                    background: 'linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-rgb) / 0.8))',
+                    boxShadow: '0 2px 8px rgb(var(--accent-rgb) / 0.4)',
+                  }}
+                >
                   {activeFilterCount}
                 </span>
               )}
             </button>
           )}
 
-          {/* Modo foco */}
+          {/* Focus mode */}
           <button
             onClick={() => { setFocusMode(v => !v); if (!focusMode) setSidebarOpen(false) }}
-            className={`btn-ghost gap-2 ${focusMode ? 'bg-accent/15 text-accent border border-accent/30' : ''}`}
+            className={`btn-ghost gap-2 rounded-xl text-[13px] ${
+              focusMode ? 'text-accent' : ''
+            }`}
+            style={focusMode ? {
+              background: 'rgb(var(--accent-rgb) / 0.1)',
+              border: '1px solid rgb(var(--accent-rgb) / 0.2)',
+            } : undefined}
             title={focusMode ? 'Sair do modo foco' : 'Modo foco'}
           >
             <Focus size={17} />
@@ -156,17 +225,22 @@ export default function Questoes() {
         </div>
       </div>
 
-      {/* ── Layout principal ── */}
-      <div className={`flex gap-6 ${focusMode ? '' : ''}`}>
-        {/* Sidebar de filtros */}
+      {/* ── Main layout ── */}
+      <div className="flex gap-7">
+        {/* Filter sidebar */}
         {!focusMode && sidebarOpen && (
-          <aside className="w-64 shrink-0 animate-slide-up">
+          <aside className="w-[272px] shrink-0 animate-slide-in-right">
             <div className="card sticky top-4">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2.5 mb-5">
                 <Filter size={15} className="text-ink-3" />
-                <h2 className="text-sm font-semibold text-ink">Filtros</h2>
+                <h2 className="font-heading text-sm font-bold text-ink tracking-tight">Filtros</h2>
                 {activeFilterCount > 0 && (
-                  <span className="ml-auto badge bg-accent/10 text-accent">{activeFilterCount}</span>
+                  <span
+                    className="ml-auto badge text-accent text-[11px]"
+                    style={{ background: 'rgb(var(--accent-rgb) / 0.1)' }}
+                  >
+                    {activeFilterCount}
+                  </span>
                 )}
               </div>
               <QuestionFilters
@@ -175,18 +249,29 @@ export default function Questoes() {
                 onReset={handleReset}
               />
 
-              {/* ── Gerar Teste ── */}
-              <div className="px-4 pb-5 pt-2">
+              {/* Gerar Teste */}
+              <div className="px-1 pb-1 pt-3">
                 <button
                   onClick={() => setExamOpen(true)}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                    bg-gradient-to-r from-accent to-violet-500 hover:from-accent/90 hover:to-violet-500/90
-                    text-white font-semibold text-sm transition-all shadow-lg shadow-accent/20
-                    hover:shadow-accent/30 hover:scale-[1.02] active:scale-100">
+                  className="w-full flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-xl
+                    text-white font-bold text-sm transition-all duration-300 group"
+                  style={{
+                    background: 'linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-rgb) / 0.75))',
+                    boxShadow: '0 4px 20px -2px rgb(var(--accent-rgb) / 0.3)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = '0 6px 28px -2px rgb(var(--accent-rgb) / 0.45)'
+                    e.currentTarget.style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = '0 4px 20px -2px rgb(var(--accent-rgb) / 0.3)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
                   <ClipboardList size={16} />
                   Gerar Teste
                 </button>
-                <p className="text-[10px] text-ink-4 text-center mt-2">
+                <p className="text-[10px] text-ink-4 text-center mt-2.5">
                   Simulado com os filtros ativos
                 </p>
               </div>
@@ -194,33 +279,53 @@ export default function Questoes() {
           </aside>
         )}
 
-        {/* Lista de questões */}
+        {/* Question list */}
         <div className="flex-1 min-w-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3 text-ink-3">
-              <Loader2 size={28} className="animate-spin text-accent" />
-              <p className="text-sm">Carregando questões...</p>
+            /* Skeleton loading */
+            <div className="space-y-5 animate-fade-in">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
             </div>
           ) : fetchError ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center">
-                <SearchX size={28} className="text-error" />
+            /* Error state */
+            <div className="flex flex-col items-center justify-center py-28 gap-5 animate-fade-in">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: 'rgb(239 68 68 / 0.1)',
+                  border: '1px solid rgb(239 68 68 / 0.15)',
+                }}
+              >
+                <SearchX size={26} className="text-error" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-ink">Erro ao carregar questões</p>
-                <p className="text-xs text-error mt-1 font-mono">{fetchError}</p>
-                <button onClick={() => fetchQuestions(filters, page)}
-                  className="mt-3 text-xs text-accent hover:underline">Tentar novamente</button>
+                <p className="font-heading text-base font-bold text-ink">Erro ao carregar questões</p>
+                <p className="text-xs text-error/80 mt-1.5 font-mono">{fetchError}</p>
+                <button
+                  onClick={() => fetchQuestions(filters, page)}
+                  className="mt-4 text-[13px] text-accent hover:text-accent-hover transition-colors duration-200 font-medium"
+                >
+                  Tentar novamente
+                </button>
               </div>
             </div>
           ) : questions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-surface-3 flex items-center justify-center">
-                <SearchX size={28} className="text-ink-4" />
+            /* Empty state */
+            <div className="flex flex-col items-center justify-center py-28 gap-5 animate-fade-in">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: 'rgb(var(--s3))',
+                  border: '1px solid rgb(255 255 255 / 0.06)',
+                }}
+              >
+                <SearchX size={26} className="text-ink-4" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-ink">Nenhuma questão encontrada</p>
-                <p className="text-xs text-ink-3 mt-1">Tente ajustar os filtros ou limpar a busca</p>
+                <p className="font-heading text-base font-bold text-ink">Nenhuma questão encontrada</p>
+                <p className="text-[13px] text-ink-3 mt-1.5">Ajuste os filtros ou limpe a busca</p>
               </div>
               <button onClick={handleReset} className="btn-secondary text-sm">
                 Limpar filtros
@@ -228,12 +333,21 @@ export default function Questoes() {
             </div>
           ) : (
             <>
-              {/* Resumo dos filtros ativos (modo foco) */}
+              {/* Focus mode filter summary */}
               {focusMode && activeFilterCount > 0 && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-surface-2 border border-surface-4/60 rounded-xl text-xs text-ink-3">
+                <div
+                  className="flex items-center gap-2.5 mb-5 p-3.5 rounded-xl text-[12px] text-ink-3 animate-fade-in"
+                  style={{
+                    background: 'rgb(var(--s2) / 0.7)',
+                    border: '1px solid rgb(255 255 255 / 0.06)',
+                  }}
+                >
                   <Filter size={13} />
-                  <span>{activeFilterCount} filtro(s) ativo(s)</span>
-                  <button onClick={() => setFocusMode(false)} className="ml-auto text-accent hover:underline">
+                  <span className="font-medium">{activeFilterCount} filtro(s) ativo(s)</span>
+                  <button
+                    onClick={() => setFocusMode(false)}
+                    className="ml-auto text-accent hover:text-accent-hover font-medium transition-colors duration-200"
+                  >
                     Editar
                   </button>
                 </div>
@@ -256,7 +370,7 @@ export default function Questoes() {
       </div>
     </div>
 
-    {/* ── Exam Mode overlay ── */}
+    {/* Exam Mode overlay */}
     {examOpen && (
       <ExamMode
         filters={filters}

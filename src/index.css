@@ -4,83 +4,221 @@
 
 /* ── Theme CSS variables ───────────────────────────────────────────────────── */
 
-/* Dark palette (default — also used when .dark class is present) */
+/* Dark palette (default) — deep, cool, Linear/Vercel-inspired */
 :root {
   --accent-rgb:       124 106 247;
   --accent-hover-rgb: 144 131 248;
 
-  /* surface scale — dark */
-  --s0: 12 12 14;
-  --s1: 17 17 19;
-  --s2: 24 24 27;
-  --s3: 34 34 38;
-  --s4: 46 46 51;
-  --s5: 63 63 70;
+  /* surface scale — deep dark with cool blue undertone */
+  --s0:  8  8 12;
+  --s1: 13 13 18;
+  --s2: 19 19 25;
+  --s3: 28 28 36;
+  --s4: 40 40 50;
+  --s5: 55 55 68;
 
-  /* ink scale — dark (light text on dark bg) */
-  --ink-rgb:  244 244 245;
-  --ink2-rgb: 161 161 170;
-  --ink3-rgb: 113 113 122;
-  --ink4-rgb: 82 82 91;
+  /* ink scale — slightly warm whites */
+  --ink-rgb:  237 237 242;
+  --ink2-rgb: 148 148 162;
+  --ink3-rgb: 100 100 118;
+  --ink4-rgb:  68  68  82;
 }
 
-/* Light palette — applied when html does NOT carry the .dark class */
+/* Light palette */
 html:not(.dark) {
-  /* surface scale — light */
-  --s0: 240 240 245;
+  --s0: 242 242 247;
   --s1: 255 255 255;
-  --s2: 248 248 251;
-  --s3: 237 237 242;
-  --s4: 220 220 228;
-  --s5: 200 200 210;
+  --s2: 248 248 252;
+  --s3: 238 238 244;
+  --s4: 222 222 232;
+  --s5: 200 200 214;
 
-  /* ink scale — light (dark text on light bg) */
-  --ink-rgb:  17 17 19;
-  --ink2-rgb: 63 63 70;
-  --ink3-rgb: 113 113 122;
-  --ink4-rgb: 161 161 170;
+  --ink-rgb:  17  17  22;
+  --ink2-rgb: 60  60  72;
+  --ink3-rgb: 100 100 118;
+  --ink4-rgb: 148 148 162;
 }
+
+/* ── Base layer ────────────────────────────────────────────────────────────── */
 
 @layer base {
   * { box-sizing: border-box; }
-  body { @apply bg-surface-1 text-ink font-sans antialiased; font-feature-settings: 'cv02','cv03','cv04','cv11'; }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+
+  body {
+    @apply bg-surface-0 text-ink font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Refined scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { @apply bg-surface-5 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-ink-4; }
-  ::selection { @apply bg-accent/30 text-ink; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--s5) / 0.5);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--s5) / 0.8);
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgb(var(--accent-rgb) / 0.25);
+    color: rgb(var(--ink-rgb));
+  }
+
+  /* Heading font utility */
+  h1, h2, h3, h4 {
+    font-family: 'Satoshi', 'General Sans', system-ui, sans-serif;
+  }
 }
 
+/* ── Component layer ───────────────────────────────────────────────────────── */
+
 @layer components {
+
+  /* ── Buttons ── */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5
-           bg-accent hover:bg-accent-hover active:scale-[.98]
-           text-white text-sm font-medium rounded-lg
-           transition-all duration-150 focus-visible:outline-none
-           focus-visible:ring-2 focus-visible:ring-accent/50
-           disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           text-white text-sm font-semibold rounded-xl
+           transition-all duration-200 ease-out
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none;
+    background: linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-rgb) / 0.85));
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.1);
   }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgb(var(--accent-hover-rgb)), rgb(var(--accent-rgb)));
+    box-shadow: 0 4px 16px rgb(var(--accent-rgb) / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.15);
+    transform: translateY(-0.5px);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  }
+
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5
-           bg-surface-3 hover:bg-surface-4 active:scale-[.98]
-           text-ink text-sm font-medium rounded-lg border border-surface-5
-           transition-all duration-150 focus-visible:outline-none
-           focus-visible:ring-2 focus-visible:ring-accent/30
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           text-ink text-sm font-medium rounded-xl
+           transition-all duration-200 ease-out
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30
            disabled:opacity-40 disabled:cursor-not-allowed;
+    background: rgb(var(--s2));
+    border: 1px solid rgb(255 255 255 / 0.08);
   }
+  .btn-secondary:hover:not(:disabled) {
+    background: rgb(var(--s3));
+    border-color: rgb(255 255 255 / 0.12);
+    transform: translateY(-0.5px);
+  }
+  .btn-secondary:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 px-3 py-2
-           text-ink-2 hover:text-ink hover:bg-surface-3 active:scale-[.98]
-           text-sm font-medium rounded-lg
-           transition-all duration-150 focus-visible:outline-none;
+           text-ink-2 text-sm font-medium rounded-xl
+           transition-all duration-200 ease-out
+           focus-visible:outline-none;
   }
-  .card { @apply bg-surface-2 border border-surface-4/60 rounded-xl p-5; }
+  .btn-ghost:hover {
+    @apply text-ink;
+    background: rgb(255 255 255 / 0.05);
+  }
+  .btn-ghost:active {
+    transform: scale(0.97);
+  }
+
+  /* ── Card ── */
+  .card {
+    @apply rounded-2xl p-6;
+    background: rgb(var(--s2) / 0.7);
+    border: 1px solid rgb(255 255 255 / 0.06);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Card with glow on hover — for stat cards & interactive cards */
+  .card-glow {
+    @apply card transition-all duration-300 ease-out;
+  }
+  .card-glow:hover {
+    border-color: rgb(var(--accent-rgb) / 0.15);
+    box-shadow: 0 0 24px -4px rgb(var(--accent-rgb) / 0.08);
+  }
+
+  /* ── Input ── */
   .input {
-    @apply w-full px-3.5 py-2.5 bg-surface-2 border border-surface-5
-           rounded-lg text-sm text-ink placeholder:text-ink-4
-           focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/60
-           transition-all duration-150;
+    @apply w-full px-4 py-2.5 rounded-xl text-sm text-ink
+           placeholder:text-ink-4
+           transition-all duration-200;
+    background: rgb(var(--s1));
+    border: 1px solid rgb(255 255 255 / 0.08);
   }
-  .label  { @apply text-xs font-medium text-ink-3 uppercase tracking-wider; }
-  .badge  { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium; }
+  .input:focus {
+    outline: none;
+    border-color: rgb(var(--accent-rgb) / 0.5);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.12), 0 0 16px -2px rgb(var(--accent-rgb) / 0.1);
+  }
+
+  /* ── Label ── */
+  .label {
+    @apply text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em];
+  }
+
+  /* ── Badge ── */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold;
+    border: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  /* ── Skeleton shimmer ── */
+  .skeleton {
+    @apply rounded-2xl;
+    background: linear-gradient(
+      90deg,
+      rgb(var(--s2)) 0%,
+      rgb(var(--s3)) 40%,
+      rgb(var(--s2)) 80%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+}
+
+/* ── Utility layer ─────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .font-heading {
+    font-family: 'Satoshi', 'General Sans', system-ui, sans-serif;
+  }
+
+  /* Subtle noise texture for backgrounds */
+  .bg-noise {
+    position: relative;
+  }
+  .bg-noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-hover-rgb)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass border */
+  .border-glass {
+    border-color: rgb(255 255 255 / 0.06);
+  }
+  .border-glass-strong {
+    border-color: rgb(255 255 255 / 0.1);
+  }
 }

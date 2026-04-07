@@ -13,28 +13,30 @@ function SelectionPopup({ rect, onAsk }) {
       style={{
         position: 'fixed',
         left: rect.left + rect.width / 2,
-        top: rect.top - 6,
+        top: rect.top - 8,
         transform: 'translate(-50%, -100%)',
         zIndex: 9999,
         pointerEvents: 'auto',
       }}
     >
       <button
-        onMouseDown={e => e.preventDefault()} // mantém a seleção ativa
+        onMouseDown={e => e.preventDefault()}
         onClick={onAsk}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover
-          text-white text-xs font-semibold shadow-xl animate-scale-in whitespace-nowrap"
+        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-white text-xs font-bold animate-scale-in whitespace-nowrap transition-all duration-200"
+        style={{
+          background: 'linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-rgb) / 0.8))',
+          boxShadow: '0 4px 20px -2px rgb(var(--accent-rgb) / 0.4), 0 8px 24px -4px rgb(0 0 0 / 0.3)',
+        }}
       >
         <GraduationCap size={12} />
         Perguntar ao Tutor
       </button>
-      {/* Setinha apontando para a seleção */}
       <div
         style={{
           width: 0, height: 0,
-          borderLeft: '5px solid transparent',
-          borderRight: '5px solid transparent',
-          borderTop: '5px solid rgb(var(--accent-rgb))',
+          borderLeft: '6px solid transparent',
+          borderRight: '6px solid transparent',
+          borderTop: '6px solid rgb(var(--accent-rgb))',
           margin: '0 auto',
         }}
       />
@@ -45,39 +47,82 @@ function SelectionPopup({ rect, onAsk }) {
 // ─── Alternativas ─────────────────────────────────────────────────────────────
 
 function OptionButton({ letter, text, state, onClick }) {
+  const base = 'w-full flex items-start gap-3 p-3.5 rounded-xl text-left transition-all duration-200'
+
   const styles = {
-    idle: 'border-surface-5 bg-surface-3 hover:border-accent/50 hover:bg-accent/5 cursor-pointer',
-    selected: 'border-accent/60 bg-accent/10 cursor-pointer',
-    correct: 'border-success/60 bg-success/10',
-    wrong: 'border-error/60 bg-error/10',
-    'reveal-correct': 'border-success/40 bg-success/5',
+    idle:            `${base} cursor-pointer hover:bg-white/[0.04]`,
+    selected:        `${base} cursor-pointer`,
+    correct:         `${base}`,
+    wrong:           `${base}`,
+    'reveal-correct': `${base} opacity-60`,
   }
-  const letterStyles = {
-    idle: 'bg-surface-4 text-ink-3',
-    selected: 'bg-accent/20 text-accent',
-    correct: 'bg-success/20 text-success',
-    wrong: 'bg-error/20 text-error',
-    'reveal-correct': 'bg-success/15 text-success',
+
+  const borderStyles = {
+    idle:            '1px solid rgb(255 255 255 / 0.06)',
+    selected:        '1px solid rgb(var(--accent-rgb) / 0.4)',
+    correct:         '1px solid rgb(34 197 94 / 0.4)',
+    wrong:           '1px solid rgb(239 68 68 / 0.4)',
+    'reveal-correct': '1px solid rgb(34 197 94 / 0.2)',
+  }
+
+  const bgStyles = {
+    idle:            'transparent',
+    selected:        'rgb(var(--accent-rgb) / 0.06)',
+    correct:         'rgb(34 197 94 / 0.06)',
+    wrong:           'rgb(239 68 68 / 0.06)',
+    'reveal-correct': 'rgb(34 197 94 / 0.03)',
+  }
+
+  const letterCls = {
+    idle:            'bg-white/[0.06] text-ink-3',
+    selected:        'text-accent',
+    correct:         'text-success',
+    wrong:           'text-error',
+    'reveal-correct': 'text-success/60',
+  }
+
+  const letterBg = {
+    idle:            'rgb(255 255 255 / 0.06)',
+    selected:        'rgb(var(--accent-rgb) / 0.15)',
+    correct:         'rgb(34 197 94 / 0.15)',
+    wrong:           'rgb(239 68 68 / 0.15)',
+    'reveal-correct': 'rgb(34 197 94 / 0.1)',
+  }
+
+  const shadowStyles = {
+    idle:            'none',
+    selected:        '0 0 16px -4px rgb(var(--accent-rgb) / 0.2)',
+    correct:         '0 0 16px -4px rgb(34 197 94 / 0.2)',
+    wrong:           '0 0 16px -4px rgb(239 68 68 / 0.2)',
+    'reveal-correct': 'none',
   }
 
   return (
     <button
       onClick={onClick}
       disabled={state !== 'idle' && state !== 'selected'}
-      className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all duration-200 ${styles[state]}`}
+      className={styles[state]}
+      style={{
+        border: borderStyles[state],
+        background: bgStyles[state],
+        boxShadow: shadowStyles[state],
+      }}
     >
-      <span className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${letterStyles[state]}`}>
+      <span
+        className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all duration-200 ${letterCls[state]}`}
+        style={{ background: letterBg[state] }}
+      >
         {letter}
       </span>
       <span className={`leading-relaxed mt-0.5 transition-colors ${
         state === 'correct'        ? 'text-success font-medium' :
         state === 'wrong'          ? 'text-error' :
-        state === 'reveal-correct' ? 'text-success/80' :
+        state === 'reveal-correct' ? 'text-success/70' :
         'text-ink-2'
       }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>{text}</span>
       {state === 'correct'        && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success" />}
       {state === 'wrong'          && <XCircle      size={16} className="shrink-0 ml-auto mt-0.5 text-error" />}
-      {state === 'reveal-correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success/60" />}
+      {state === 'reveal-correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success/50" />}
     </button>
   )
 }
@@ -93,10 +138,9 @@ export default function QuestionCard({ question, index, previousAnswer }) {
 
   // ── Seleção de texto → grifo amarelo + Perguntar ao Tutor ──
   const statementRef   = useRef(null)
-  const [selPopup,         setSelPopup]         = useState(null)  // { rect, text }
-  const [selectionContext, setSelectionContext]  = useState(null)  // { text, id }
-  const [highlights,       setHighlights]        = useState([])    // trechos grifados
-  // Ref para acesso sem stale closure dentro do useEffect
+  const [selPopup,         setSelPopup]         = useState(null)
+  const [selectionContext, setSelectionContext]  = useState(null)
+  const [highlights,       setHighlights]        = useState([])
   const highlightsRef = useRef([])
   useEffect(() => { highlightsRef.current = highlights }, [highlights])
 
@@ -109,11 +153,9 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         const rect = sel.getRangeAt(0).getBoundingClientRect()
 
         if (highlightsRef.current.includes(text)) {
-          // Toggle: remove o grifo e não mostra popup
           setHighlights(h => h.filter(t => t !== text))
           window.getSelection()?.removeAllRanges()
         } else {
-          // Novo grifo: adiciona e mostra popup
           setHighlights(h => [...h, text])
           setSelPopup({ rect, text })
         }
@@ -157,7 +199,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
     setSaving(true)
     try {
       await api.post('/api/answers', { question_id: question.id, answer_given: chosen })
-    } catch { /* ignorado — exibe resultado mesmo assim */ }
+    } catch { /* ignorado */ }
     finally { setSaving(false); setSubmitted(true) }
   }
 
@@ -169,21 +211,27 @@ export default function QuestionCard({ question, index, previousAnswer }) {
   }
 
   return (
-    <article className={`card transition-all duration-300 ${
-      submitted
-        ? isCorrect
-          ? 'border-success/30 shadow-sm shadow-success/5'
-          : 'border-error/30 shadow-sm shadow-error/5'
-        : 'hover:border-surface-5'
-    }`}>
+    <article
+      className="card transition-all duration-300 animate-fade-in"
+      style={submitted ? {
+        borderColor: isCorrect ? 'rgb(34 197 94 / 0.2)' : 'rgb(239 68 68 / 0.2)',
+        boxShadow: isCorrect
+          ? '0 0 24px -8px rgb(34 197 94 / 0.08)'
+          : '0 0 24px -8px rgb(239 68 68 / 0.08)',
+      } : undefined}
+    >
 
-      {/* Header: número + badges + favorito */}
-      <div className="flex items-start gap-3 mb-4">
-        <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold
-          ${submitted
-            ? isCorrect ? 'bg-success/15 text-success' : 'bg-error/15 text-error'
-            : 'bg-surface-4 text-ink-3'
-          }`}
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-5">
+        <div
+          className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all duration-300"
+          style={
+            submitted
+              ? isCorrect
+                ? { background: 'rgb(34 197 94 / 0.12)', color: '#22c55e' }
+                : { background: 'rgb(239 68 68 / 0.12)', color: '#ef4444' }
+              : { background: 'rgb(255 255 255 / 0.06)', color: 'rgb(var(--ink3-rgb))' }
+          }
         >
           {submitted
             ? isCorrect ? <CheckCircle2 size={15} /> : <XCircle size={15} />
@@ -193,38 +241,47 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {question.subject_area && (
-              <span className="badge bg-accent/10 text-accent">{question.subject_area}</span>
+              <span className="badge text-accent text-[11px]" style={{ background: 'rgb(var(--accent-rgb) / 0.1)' }}>
+                {question.subject_area}
+              </span>
             )}
             {question.topic && (
-              <span className="badge bg-surface-4 text-ink-3">{question.topic}</span>
+              <span className="badge text-ink-3 text-[11px]" style={{ background: 'rgb(var(--s3))' }}>
+                {question.topic}
+              </span>
             )}
-            <span className="badge bg-surface-4 text-ink-4 ml-auto">
+            <span className="badge text-ink-4 text-[11px] ml-auto" style={{ background: 'rgb(var(--s3))' }}>
               {question.vestibular} {question.year}
             </span>
           </div>
         </div>
         <button
           onClick={toggleFavorite}
-          className={`shrink-0 p-1.5 rounded-lg transition-all ${favorite ? 'text-warning' : 'text-ink-4 hover:text-warning'}`}
+          className={`shrink-0 p-2 rounded-xl transition-all duration-200 ${
+            favorite
+              ? 'text-warning'
+              : 'text-ink-4 hover:text-warning hover:bg-warning/8'
+          }`}
+          style={favorite ? { transform: 'scale(1.1)' } : undefined}
           title={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
           <Star size={16} fill={favorite ? 'currentColor' : 'none'} />
         </button>
       </div>
 
-      {/* Enunciado — seleção gera grifo amarelo (toggle) */}
-      <div className="mb-4" ref={statementRef}>
-        <p className="text-ink leading-relaxed whitespace-pre-wrap select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>
+      {/* Enunciado */}
+      <div className="mb-5" ref={statementRef}>
+        <p className="text-ink-2 leading-relaxed whitespace-pre-wrap select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>
           {renderWithHighlights(question.statement, highlights)}
         </p>
       </div>
 
-      {/* Popup flutuante de seleção */}
+      {/* Popup */}
       {selPopup && <SelectionPopup rect={selPopup.rect} onAsk={handlePopupAsk} />}
 
-      {/* Imagem — entre o enunciado e as alternativas */}
+      {/* Imagem */}
       {question.image_url && !imgError && (
-        <div className="mb-4 rounded-xl overflow-hidden border border-surface-5 bg-surface-3">
+        <div className="mb-5 rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s3))' }}>
           <img
             src={question.image_url}
             alt="Imagem da questão"
@@ -234,13 +291,14 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </div>
       )}
       {question.image_url && imgError && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-surface-3 border border-surface-5 text-ink-3 text-xs">
+        <div className="mb-5 flex items-center gap-2 px-4 py-3.5 rounded-xl text-ink-3 text-xs"
+             style={{ background: 'rgb(var(--s3))', border: '1px solid rgb(255 255 255 / 0.06)' }}>
           <ImageOff size={15} /> Imagem indisponível
         </div>
       )}
 
       {/* Alternativas */}
-      <div className="space-y-2 mb-4">
+      <div className="space-y-2 mb-5">
         {options.map(opt => (
           <OptionButton
             key={opt.letter}
@@ -263,65 +321,78 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </button>
       ) : (
         <div className="space-y-3 animate-slide-up">
-          {/* Badge de acerto/erro */}
-          <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border ${
-            isCorrect
-              ? 'bg-success/8 border-success/25 text-success'
-              : 'bg-error/8 border-error/25 text-error'
-          }`}>
+          {/* Result badge */}
+          <div
+            className="flex items-center gap-2.5 px-4 py-3.5 rounded-xl text-sm font-semibold"
+            style={isCorrect ? {
+              background: 'rgb(34 197 94 / 0.06)',
+              border: '1px solid rgb(34 197 94 / 0.2)',
+              color: '#22c55e',
+            } : {
+              background: 'rgb(239 68 68 / 0.06)',
+              border: '1px solid rgb(239 68 68 / 0.2)',
+              color: '#ef4444',
+            }}
+          >
             {isCorrect
-              ? <><CheckCircle2 size={16} /><span className="text-sm font-semibold">Correto! 🎉</span></>
-              : <><XCircle size={16} /><span className="text-sm font-semibold">Resposta incorreta</span></>
+              ? <><CheckCircle2 size={16} /><span>Correto!</span></>
+              : <><XCircle size={16} /><span>Resposta incorreta</span></>
             }
           </div>
 
-          {/* Painel de resolução — igual ao Simulado */}
-          <div className="rounded-xl border border-surface-4 bg-surface-2 overflow-hidden">
-            <div className="px-4 py-3 border-b border-surface-4 bg-surface-3">
-              <p className="text-xs font-semibold text-ink-4 uppercase tracking-wider">Resolução</p>
+          {/* Resolution panel */}
+          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s2) / 0.5)' }}>
+            <div className="px-5 py-3" style={{ borderBottom: '1px solid rgb(255 255 255 / 0.04)', background: 'rgb(var(--s3) / 0.5)' }}>
+              <p className="label">Resolução</p>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="p-5 space-y-3">
               {/* Gabarito oficial */}
-              <div className="p-3 rounded-xl bg-surface-1 border border-surface-3">
-                <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
+              <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                <p className="text-[11px] text-ink-4 mb-2 font-medium uppercase tracking-wider">Gabarito oficial</p>
                 <div className="flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-base font-bold text-emerald-400 flex-shrink-0">
+                  <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-bold text-emerald-400 shrink-0"
+                        style={{ background: 'rgb(34 197 94 / 0.12)', border: '1px solid rgb(34 197 94 / 0.2)' }}>
                     {correct}
                   </span>
-                  <span className="text-sm text-ink-2 leading-relaxed">
+                  <span className="text-[13px] text-ink-2 leading-relaxed">
                     {question.options?.find(o => o.letter === correct)?.text ?? ''}
                   </span>
                 </div>
               </div>
 
-              {/* Resposta do aluno — só se errou */}
+              {/* Resposta do aluno */}
               {!isCorrect && chosen && (
-                <div className="p-3 rounded-xl bg-surface-1 border border-surface-3">
-                  <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
+                <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                  <p className="text-[11px] text-ink-4 mb-2 font-medium uppercase tracking-wider">Sua resposta</p>
                   <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-base font-bold text-rose-400 flex-shrink-0">
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-bold text-rose-400 shrink-0"
+                          style={{ background: 'rgb(239 68 68 / 0.12)', border: '1px solid rgb(239 68 68 / 0.2)' }}>
                       {chosen}
                     </span>
-                    <span className="text-sm text-ink-2 leading-relaxed">
+                    <span className="text-[13px] text-ink-2 leading-relaxed">
                       {question.options?.find(o => o.letter === chosen)?.text ?? ''}
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Explicação (se houver) ou placeholder */}
+              {/* Explicação */}
               {question.explanation ? (
-                <div className="p-3 rounded-xl bg-surface-1 border border-surface-3">
-                  <p className="text-xs text-ink-4 mb-1.5">Explicação</p>
-                  <p className="text-sm text-ink-2 leading-relaxed">{question.explanation}</p>
+                <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                  <p className="text-[11px] text-ink-4 mb-1.5 font-medium uppercase tracking-wider">Explicação</p>
+                  <p className="text-[13px] text-ink-2 leading-relaxed">{question.explanation}</p>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-surface-1 border border-surface-3 border-dashed flex flex-col items-center gap-2 text-center">
-                  <span className="text-2xl">🚧</span>
+                <div className="p-5 rounded-xl flex flex-col items-center gap-2.5 text-center"
+                     style={{ background: 'rgb(var(--s1))', border: '1px dashed rgb(255 255 255 / 0.08)' }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                       style={{ background: 'rgb(var(--s3))' }}>
+                    <span className="text-lg">🚧</span>
+                  </div>
                   <div>
                     <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
-                    <p className="text-xs text-ink-4 mt-0.5">Em breve você terá acesso à resolução detalhada desta questão.</p>
+                    <p className="text-[11px] text-ink-4 mt-0.5">Em breve terá acesso à resolução detalhada.</p>
                   </div>
                 </div>
               )}
@@ -330,7 +401,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </div>
       )}
 
-      {/* Chat do Tutor — key garante instância fresca sem histórico anterior */}
+      {/* Chat do Tutor */}
       <QuestionChat
         key={question.id}
         question={question}
