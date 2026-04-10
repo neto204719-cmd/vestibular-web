@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, SlidersHorizontal, X, RotateCcw } from 'lucide-react'
 import { api } from '../lib/api'
 
-const VESTIBULARES = ['ENEM', 'FUVEST', 'UNICAMP']
-
 function FilterSelect({ label, value, onChange, options, placeholder = 'Todos' }) {
   return (
     <div className="space-y-2">
@@ -43,7 +41,7 @@ function Chip({ label, onRemove }) {
 }
 
 export default function QuestionFilters({ filters, onChange, onReset }) {
-  const [meta,        setMeta]        = useState({ areas: [], vestibulares: VESTIBULARES, years: [] })
+  const [meta,        setMeta]        = useState({ subject_areas: [], vestibulares: [], years: [] })
   const [layer2Open,  setLayer2Open]  = useState(false)
   const [layer3Open,  setLayer3Open]  = useState(false)
 
@@ -73,13 +71,13 @@ export default function QuestionFilters({ filters, onChange, onReset }) {
           label="Matéria"
           value={filters.subject_area}
           onChange={v => set('subject_area', v)}
-          options={meta.areas}
+          options={meta.subject_areas ?? []}
         />
         <FilterSelect
           label="Vestibular"
           value={filters.vestibular}
           onChange={v => set('vestibular', v)}
-          options={VESTIBULARES}
+          options={meta.vestibulares ?? []}
         />
       </div>
 
