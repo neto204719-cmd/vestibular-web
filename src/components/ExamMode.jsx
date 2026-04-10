@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   X, Flag, ChevronLeft, ChevronRight, Trophy, Clock,
   RotateCcw, CheckCircle, XCircle, Minus, BookOpen,
-  AlertTriangle, Loader2, Eye, EyeOff, GraduationCap,
+  AlertTriangle, Loader2, Eye, EyeOff, GraduationCap, Send,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
@@ -123,13 +123,16 @@ function QuestionSidebarBtn({ num, status, current, onClick }) {
 
 // ─── Resolution panel ─────────────────────────────────────────────────────────
 
-function ResolutionPanel({ q, userAnswer, isReview, showGabarito, selectionContext }) {
-  const isCorrect = userAnswer && userAnswer === q.correct_letter
+function ResolutionPanel({ q, userAnswer, isReview, showGabarito, selectionContext, aiFeedback }) {
+  const isOpen = q.question_type === 'open'
+  const isCorrect = userAnswer && (isOpen ? !!aiFeedback?.is_correct : userAnswer === q.correct_letter)
 
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 py-4 border-b border-surface-3 flex-shrink-0">
-        <p className="text-xs font-semibold text-ink-4 uppercase tracking-wider">Resolução</p>
+        <p className="text-xs font-semibold text-ink-4 uppercase tracking-wider">
+          {isOpen ? 'Avaliação da IA' : 'Resolução'}
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -142,9 +145,12 @@ function ResolutionPanel({ q, userAnswer, isReview, showGabarito, selectionConte
                   : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
               }`}>
                 {isCorrect
-                  ? <><CheckCircle size={16} /> Resposta correta!</>
+                  ? <><CheckCircle size={16} /> {isOpen ? 'Resposta aprovada!' : 'Resposta correta!'}</>
                   : <><XCircle size={16} /> Resposta incorreta</>
                 }
+                {isOpen && aiFeedback && (
+                  <span className="ml-auto text-xs font-bold">{aiFeedback.score}/100</span>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm bg-surface-3 border border-surface-4 text-ink-4">
@@ -152,39 +158,98 @@ function ResolutionPanel({ q, userAnswer, isReview, showGabarito, selectionConte
               </div>
             )}
 
-            <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
-              <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-lg font-bold text-emerald-400">
-                  {q.correct_letter}
-                </span>
-                <span className="text-sm text-ink-2 leading-relaxed">
-                  {q.options?.find(o => o.letter === q.correct_letter)?.text ?? ''}
-                </span>
-              </div>
-            </div>
+            {isOpen ? (
+              /* Open question resolution */
+              <>
+                {aiFeedback ? (
+                  <>
+                    {/* Score bar */}
+                    <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-ink-4">Pontuação</p>
+                        <span className="text-sm font-bold" style={{ color: aiFeedback.score >= 60 ? '#22c55e' : '#ef4444' }}>
+                          {aiFeedback.score}/100
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-surface-4 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${aiFeedback.score}%`,
+                            background: aiFeedback.score >= 60
+                              ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                              : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                          }}
+                        />
+                      </div>
+                    </div>
 
-            {userAnswer && !isCorrect && (
-              <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
-                <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
-                <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-lg font-bold text-rose-400">
-                    {userAnswer}
-                  </span>
-                  <span className="text-sm text-ink-2 leading-relaxed">
-                    {q.options?.find(o => o.letter === userAnswer)?.text ?? ''}
-                  </span>
+                    {/* Feedback */}
+                    <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+                      <p className="text-xs text-ink-4 mb-2">Feedback</p>
+                      <p className="text-sm text-ink-2 leading-relaxed">{aiFeedback.feedback}</p>
+                    </div>
+
+                    {/* Gabarito (rubric) */}
+                    {q.explanation && (
+                      <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+                        <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
+                        <p className="text-sm text-ink-2 leading-relaxed">{q.explanation}</p>
+                      </div>
+                    )}
+
+                    {/* Student answer */}
+                    {userAnswer && (
+                      <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+                        <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
+                        <p className="text-sm text-ink-2 leading-relaxed whitespace-pre-wrap">{userAnswer}</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-5 rounded-xl bg-surface-2 border border-surface-3 text-center">
+                    <p className="text-sm text-ink-4">Avaliação indisponível</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Multiple choice resolution */
+              <>
+                <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+                  <p className="text-xs text-ink-4 mb-2">Gabarito oficial</p>
+                  <div className="flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-lg font-bold text-emerald-400">
+                      {q.correct_letter}
+                    </span>
+                    <span className="text-sm text-ink-2 leading-relaxed">
+                      {q.options?.find(o => o.letter === q.correct_letter)?.text ?? ''}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            <div className="p-5 rounded-xl bg-surface-2 border border-surface-3 border-dashed flex flex-col items-center gap-3 text-center py-8">
-              <span className="text-3xl">🚧</span>
-              <div>
-                <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
-                <p className="text-xs text-ink-4 mt-1">Em breve você terá acesso à resolução detalhada desta questão.</p>
-              </div>
-            </div>
+                {userAnswer && !isCorrect && (
+                  <div className="p-4 rounded-xl bg-surface-2 border border-surface-3">
+                    <p className="text-xs text-ink-4 mb-2">Sua resposta</p>
+                    <div className="flex items-center gap-3">
+                      <span className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-lg font-bold text-rose-400">
+                        {userAnswer}
+                      </span>
+                      <span className="text-sm text-ink-2 leading-relaxed">
+                        {q.options?.find(o => o.letter === userAnswer)?.text ?? ''}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-5 rounded-xl bg-surface-2 border border-surface-3 border-dashed flex flex-col items-center gap-3 text-center py-8">
+                  <span className="text-3xl">🚧</span>
+                  <div>
+                    <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
+                    <p className="text-xs text-ink-4 mt-1">Em breve você terá acesso à resolução detalhada desta questão.</p>
+                  </div>
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div className="text-xs text-ink-4 text-center py-2">
@@ -323,15 +388,20 @@ function ConfigPhase({ filters, quantity, setQuantity, reviewMode, setReviewMode
 
 // ─── Results phase ────────────────────────────────────────────────────────────
 
-function ResultsPhase({ questions, answers, elapsed, onReview, onRetry, onClose }) {
-  const correct = questions.filter(q => answers[q.id] === q.correct_letter).length
-  const wrong = questions.filter(q => answers[q.id] && answers[q.id] !== q.correct_letter).length
+function ResultsPhase({ questions, answers, aiFeedbacks, elapsed, onReview, onRetry, onClose }) {
+  const isQCorrect = (q) => {
+    if (!answers[q.id]) return false
+    if (q.question_type === 'open') return !!aiFeedbacks[q.id]?.is_correct
+    return answers[q.id] === q.correct_letter
+  }
+  const correct = questions.filter(q => isQCorrect(q)).length
+  const wrong   = questions.filter(q => answers[q.id] && !isQCorrect(q)).length
   const skipped = questions.filter(q => !answers[q.id]).length
   const pct = Math.round((correct / questions.length) * 100)
 
   const getResultStatus = (q) => {
     if (!answers[q.id]) return 'skipped'
-    return answers[q.id] === q.correct_letter ? 'correct' : 'wrong'
+    return isQCorrect(q) ? 'correct' : 'wrong'
   }
 
   const gradeColor =
@@ -437,13 +507,16 @@ export default function ExamMode({ filters, onClose }) {
   // 'after-each': mostra gabarito/resolução ao responder cada questão
   // 'at-end': mostra apenas na revisão após finalizar
   const [reviewMode, setReviewMode] = useState('after-each')
-  const [questions, setQuestions] = useState([])
-  const [currentIdx, setCurrentIdx] = useState(0)
-  const [answers, setAnswers] = useState({})
-  const [flagged, setFlagged] = useState(new Set())
-  const [elapsed, setElapsed] = useState(0)
-  const [loadingQ, setLoadingQ] = useState(false)
-  const [error, setError] = useState(null)
+  const [questions,       setQuestions]       = useState([])
+  const [currentIdx,      setCurrentIdx]      = useState(0)
+  const [answers,         setAnswers]         = useState({})
+  const [openDrafts,      setOpenDrafts]      = useState({})   // draft textarea text per question id
+  const [aiFeedbacks,     setAiFeedbacks]     = useState({})   // ai eval result per question id
+  const [openSubmitting,  setOpenSubmitting]  = useState(false)
+  const [flagged,         setFlagged]         = useState(new Set())
+  const [elapsed,         setElapsed]         = useState(0)
+  const [loadingQ,        setLoadingQ]        = useState(false)
+  const [error,           setError]           = useState(null)
   const timerRef = useRef(null)
 
   // ── Seleção de texto → grifo amarelo (toggle) + Perguntar ao Tutor ──
@@ -534,6 +607,8 @@ export default function ExamMode({ filters, onClose }) {
       setQuestions(shuffled.slice(0, quantity))
       setCurrentIdx(0)
       setAnswers({})
+      setOpenDrafts({})
+      setAiFeedbacks({})
       setFlagged(new Set())
       setElapsed(0)
       setPhase('exam')
@@ -567,6 +642,23 @@ export default function ExamMode({ filters, onClose }) {
     setAnswers(prev => ({ ...prev, [id]: letter }))
   }, [])
 
+  const submitOpenAnswer = useCallback(async (question) => {
+    const text = openDrafts[question.id]?.trim()
+    if (!text || openSubmitting) return
+    setOpenSubmitting(true)
+    try {
+      const res = await api.post('/api/answers', { question_id: question.id, answer_given: text })
+      setAnswers(prev => ({ ...prev, [question.id]: text }))
+      if (res?.open_feedback != null) {
+        setAiFeedbacks(prev => ({
+          ...prev,
+          [question.id]: { score: res.open_score ?? 0, feedback: res.open_feedback, is_correct: res.is_correct },
+        }))
+      }
+    } catch { /* ignorado */ }
+    finally { setOpenSubmitting(false) }
+  }, [openDrafts, openSubmitting])
+
   const finishExam = useCallback(() => {
     clearInterval(timerRef.current)
     setPhase('results')
@@ -598,6 +690,7 @@ export default function ExamMode({ filters, onClose }) {
       <ResultsPhase
         questions={questions}
         answers={answers}
+        aiFeedbacks={aiFeedbacks}
         elapsed={elapsed}
         onReview={goReview}
         onRetry={() => { setPhase('config'); setError(null) }}
@@ -614,10 +707,16 @@ export default function ExamMode({ filters, onClose }) {
   // Painel de resolução:
   // - sempre visível na fase de revisão (após finalizar)
   // - modo 'after-each': aparece logo ao responder cada questão
+  //   - questão aberta: aparece após receber avaliação da IA
+  //   - questão MC: aparece após selecionar alternativa
   // - modo 'at-end': nunca durante o simulado (só na revisão)
   // - forceShowPanel: aberto via seleção de texto → Perguntar ao Tutor
-  const showResolution = isReview || (reviewMode === 'after-each' && !!userAnswer)
+  const effectiveAnswered = isOpenQuestion ? openAnswered : !!userAnswer
+  const showResolution = isReview || (reviewMode === 'after-each' && effectiveAnswered)
   const panelVisible = showResolution || forceShowPanel
+
+  const isOpenQuestion = q?.question_type === 'open'
+  const openAnswered   = isOpenQuestion && !!answers[q?.id]
 
   const getOptionState = (letter) => {
     if (!isReview) {
@@ -725,6 +824,7 @@ export default function ExamMode({ filters, onClose }) {
                 let status
                 if (isReview) {
                   if (!answers[qq.id]) status = 'skipped-review'
+                  else if (qq.question_type === 'open') status = aiFeedbacks[qq.id]?.is_correct ? 'correct-review' : 'wrong-review'
                   else status = answers[qq.id] === qq.correct_letter ? 'correct-review' : 'wrong-review'
                 } else {
                   status = getStatus(qq)
@@ -847,22 +947,65 @@ export default function ExamMode({ filters, onClose }) {
                   </div>
                 )}
 
-                {/* Options */}
-                <div className="space-y-3 mb-8">
-                  {(q.options ?? [])
-                    .sort((a, b) => a.letter.localeCompare(b.letter))
-                    .map(opt => (
-                      <OptionButton
-                        key={opt.letter}
-                        letter={opt.letter}
-                        text={opt.text?.replace(/^[a-e]\)\s*/i, '')}
-                        state={getOptionState(opt.letter)}
-                        disabled={isReview || (reviewMode === 'after-each' && !!userAnswer)}
-                        onClick={() => !isReview && !userAnswer && setAnswer(q.id, opt.letter)}
-                      />
-                    ))
-                  }
-                </div>
+                {/* Options or textarea for open questions */}
+                {isOpenQuestion ? (
+                  <div className="mb-8 space-y-3">
+                    <textarea
+                      value={openDrafts[q.id] ?? ''}
+                      onChange={e => !openAnswered && setOpenDrafts(prev => ({ ...prev, [q.id]: e.target.value }))}
+                      disabled={openAnswered || isReview}
+                      rows={5}
+                      placeholder="Digite sua resposta aqui..."
+                      className={`w-full px-4 py-3 rounded-xl text-sm text-ink-2 leading-relaxed resize-y outline-none transition-all border bg-surface-2 ${
+                        openAnswered
+                          ? (aiFeedbacks[q.id]?.is_correct ? 'border-emerald-500/30' : 'border-rose-500/30')
+                          : 'border-surface-4'
+                      }`}
+                      style={{ fontFamily: 'Arial, sans-serif' }}
+                    />
+                    {!openAnswered && !isReview && (
+                      <button
+                        onClick={() => submitOpenAnswer(q)}
+                        disabled={openSubmitting || !(openDrafts[q.id]?.trim())}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white text-sm font-medium transition-all disabled:opacity-40"
+                      >
+                        {openSubmitting
+                          ? <><Loader2 size={14} className="animate-spin" /> Avaliando...</>
+                          : <><Send size={14} /> Enviar resposta</>
+                        }
+                      </button>
+                    )}
+                    {openAnswered && aiFeedbacks[q.id] && (reviewMode === 'after-each' || isReview) && (
+                      <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold ${
+                        aiFeedbacks[q.id].is_correct
+                          ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                          : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
+                      }`}>
+                        {aiFeedbacks[q.id].is_correct
+                          ? <><CheckCircle size={15} /> Aprovado</>
+                          : <><XCircle size={15} /> Reprovado</>
+                        }
+                        <span className="ml-auto font-bold">{aiFeedbacks[q.id].score}/100</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-8">
+                    {(q.options ?? [])
+                      .sort((a, b) => a.letter.localeCompare(b.letter))
+                      .map(opt => (
+                        <OptionButton
+                          key={opt.letter}
+                          letter={opt.letter}
+                          text={opt.text?.replace(/^[a-e]\)\s*/i, '')}
+                          state={getOptionState(opt.letter)}
+                          disabled={isReview || (reviewMode === 'after-each' && !!userAnswer)}
+                          onClick={() => !isReview && !userAnswer && setAnswer(q.id, opt.letter)}
+                        />
+                      ))
+                    }
+                  </div>
+                )}
 
                 {/* Navigation */}
                 <div className="flex items-center justify-between pt-2 border-t border-surface-3/50">
@@ -911,6 +1054,7 @@ export default function ExamMode({ filters, onClose }) {
                 isReview={isReview}
                 showGabarito={showResolution}
                 selectionContext={selectionContext}
+                aiFeedback={aiFeedbacks[q.id] ?? null}
               />
             </div>
           )}

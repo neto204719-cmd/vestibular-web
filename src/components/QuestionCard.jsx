@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap, Minus } from 'lucide-react'
+import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap, Loader2 } from 'lucide-react'
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 import { renderWithHighlights } from '../lib/renderHighlights'
@@ -130,11 +130,20 @@ function OptionButton({ letter, text, state, onClick }) {
 // ─── QuestionCard ─────────────────────────────────────────────────────────────
 
 export default function QuestionCard({ question, index, previousAnswer }) {
-  const [chosen,    setChosen]    = useState(previousAnswer?.answer_given ?? null)
-  const [submitted, setSubmitted] = useState(!!previousAnswer)
-  const [saving,    setSaving]    = useState(false)
-  const [favorite,  setFavorite]  = useState(false)
-  const [imgError,  setImgError]  = useState(false)
+  const isOpen = question.question_type === 'open'
+
+  const [chosen,      setChosen]      = useState(previousAnswer?.answer_given ?? null)
+  const [openAnswer,  setOpenAnswer]  = useState(previousAnswer?.answer_given ?? '')
+  const [submitted,   setSubmitted]   = useState(!!previousAnswer)
+  const [saving,      setSaving]      = useState(false)
+  const [favorite,    setFavorite]    = useState(false)
+  const [imgError,    setImgError]    = useState(false)
+  // For open questions: AI evaluation result
+  const [aiFeedback,  setAiFeedback]  = useState(
+    previousAnswer?.open_feedback
+      ? { score: previousAnswer.open_score ?? 0, feedback: previousAnswer.open_feedback, is_correct: previousAnswer.is_correct }
+      : null
+  )
 
   // ── Seleção de texto → grifo amarelo + Perguntar ao Tutor ──
   const statementRef   = useRef(null)
@@ -184,7 +193,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
 
   // ── Lógica da questão ──
   const correct   = question.correct_letter?.trim()
-  const isCorrect = submitted && chosen === correct
+  const isCorrect = submitted && (isOpen ? !!aiFeedback?.is_correct : chosen === correct)
   const options   = [...(question.options ?? [])].sort((a, b) => a.letter.localeCompare(b.letter))
 
   function getOptionState(letter) {
@@ -195,10 +204,16 @@ export default function QuestionCard({ question, index, previousAnswer }) {
   }
 
   async function handleSubmit() {
-    if (!chosen || submitted || saving) return
+    if (saving || submitted) return
+    if (isOpen && !openAnswer.trim()) return
+    if (!isOpen && !chosen) return
     setSaving(true)
     try {
-      await api.post('/api/answers', { question_id: question.id, answer_given: chosen })
+      const answer = isOpen ? openAnswer.trim() : chosen
+      const res = await api.post('/api/answers', { question_id: question.id, answer_given: answer })
+      if (isOpen && res?.open_feedback) {
+        setAiFeedback({ score: res.open_score ?? 0, feedback: res.open_feedback, is_correct: res.is_correct })
+      }
     } catch { /* ignorado */ }
     finally { setSaving(false); setSubmitted(true) }
   }
@@ -297,27 +312,50 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </div>
       )}
 
-      {/* Alternativas */}
-      <div className="space-y-2 mb-5">
-        {options.map(opt => (
-          <OptionButton
-            key={opt.letter}
-            letter={opt.letter}
-            text={opt.text?.replace(/^[a-e]\)\s*/i, '')}
-            state={getOptionState(opt.letter)}
-            onClick={() => { if (!submitted) setChosen(opt.letter) }}
+      {/* Alternativas ou Textarea dissertativa */}
+      {isOpen ? (
+        <div className="mb-5">
+          <textarea
+            value={openAnswer}
+            onChange={e => setOpenAnswer(e.target.value)}
+            disabled={submitted}
+            rows={5}
+            placeholder="Digite sua resposta aqui..."
+            className="w-full px-4 py-3 rounded-xl text-sm text-ink-2 leading-relaxed resize-y transition-all duration-200 outline-none"
+            style={{
+              background: submitted ? 'rgb(var(--s2) / 0.5)' : 'rgb(var(--s2))',
+              border: submitted
+                ? isCorrect ? '1px solid rgb(34 197 94 / 0.25)' : '1px solid rgb(239 68 68 / 0.25)'
+                : '1px solid rgb(255 255 255 / 0.08)',
+              fontFamily: 'Arial, sans-serif',
+            }}
           />
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="space-y-2 mb-5">
+          {options.map(opt => (
+            <OptionButton
+              key={opt.letter}
+              letter={opt.letter}
+              text={opt.text?.replace(/^[a-e]\)\s*/i, '')}
+              state={getOptionState(opt.letter)}
+              onClick={() => { if (!submitted) setChosen(opt.letter) }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Confirmar / Resultado */}
       {!submitted ? (
         <button
           onClick={handleSubmit}
-          disabled={!chosen || saving}
+          disabled={isOpen ? (!openAnswer.trim() || saving) : (!chosen || saving)}
           className="btn-primary w-full"
         >
-          {saving ? 'Salvando...' : 'Confirmar resposta'}
+          {saving
+            ? <><Loader2 size={15} className="animate-spin" /> Avaliando...</>
+            : 'Confirmar resposta'
+          }
         </button>
       ) : (
         <div className="space-y-3 animate-slide-up">
@@ -335,66 +373,126 @@ export default function QuestionCard({ question, index, previousAnswer }) {
             }}
           >
             {isCorrect
-              ? <><CheckCircle2 size={16} /><span>Correto!</span></>
+              ? <><CheckCircle2 size={16} /><span>{isOpen ? 'Resposta aprovada!' : 'Correto!'}</span></>
               : <><XCircle size={16} /><span>Resposta incorreta</span></>
             }
+            {isOpen && aiFeedback && (
+              <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-lg"
+                style={{
+                  background: isCorrect ? 'rgb(34 197 94 / 0.15)' : 'rgb(239 68 68 / 0.15)',
+                }}>
+                {aiFeedback.score}/100
+              </span>
+            )}
           </div>
 
           {/* Resolution panel */}
           <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s2) / 0.5)' }}>
             <div className="px-5 py-3" style={{ borderBottom: '1px solid rgb(255 255 255 / 0.04)', background: 'rgb(var(--s3) / 0.5)' }}>
-              <p className="label">Resolução</p>
+              <p className="label">{isOpen ? 'Avaliação da IA' : 'Resolução'}</p>
             </div>
 
             <div className="p-5 space-y-3">
-              {/* Gabarito oficial */}
-              <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
-                <p className="text-[11px] text-ink-4 mb-2 font-medium uppercase tracking-wider">Gabarito oficial</p>
-                <div className="flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-bold text-emerald-400 shrink-0"
-                        style={{ background: 'rgb(34 197 94 / 0.12)', border: '1px solid rgb(34 197 94 / 0.2)' }}>
-                    {correct}
-                  </span>
-                  <span className="text-[13px] text-ink-2 leading-relaxed">
-                    {question.options?.find(o => o.letter === correct)?.text ?? ''}
-                  </span>
-                </div>
-              </div>
+              {isOpen ? (
+                <>
+                  {/* AI feedback for open questions */}
+                  {aiFeedback ? (
+                    <>
+                      {/* Score bar */}
+                      <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[11px] text-ink-4 font-medium uppercase tracking-wider">Pontuação</p>
+                          <span className="text-sm font-bold" style={{ color: aiFeedback.score >= 60 ? '#22c55e' : '#ef4444' }}>
+                            {aiFeedback.score}/100
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${aiFeedback.score}%`,
+                              background: aiFeedback.score >= 60
+                                ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                                : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                            }}
+                          />
+                        </div>
+                      </div>
 
-              {/* Resposta do aluno */}
-              {!isCorrect && chosen && (
-                <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
-                  <p className="text-[11px] text-ink-4 mb-2 font-medium uppercase tracking-wider">Sua resposta</p>
-                  <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-bold text-rose-400 shrink-0"
-                          style={{ background: 'rgb(239 68 68 / 0.12)', border: '1px solid rgb(239 68 68 / 0.2)' }}>
-                      {chosen}
-                    </span>
-                    <span className="text-[13px] text-ink-2 leading-relaxed">
-                      {question.options?.find(o => o.letter === chosen)?.text ?? ''}
-                    </span>
-                  </div>
-                </div>
-              )}
+                      {/* Feedback text */}
+                      <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                        <p className="text-[11px] text-ink-4 mb-1.5 font-medium uppercase tracking-wider">Feedback</p>
+                        <p className="text-[13px] text-ink-2 leading-relaxed">{aiFeedback.feedback}</p>
+                      </div>
 
-              {/* Explicação */}
-              {question.explanation ? (
-                <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
-                  <p className="text-[11px] text-ink-4 mb-1.5 font-medium uppercase tracking-wider">Explicação</p>
-                  <p className="text-[13px] text-ink-2 leading-relaxed">{question.explanation}</p>
-                </div>
+                      {/* Gabarito (explanation as rubric) */}
+                      {question.explanation && (
+                        <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                          <p className="text-[11px] text-ink-4 mb-1.5 font-medium uppercase tracking-wider">Gabarito oficial</p>
+                          <p className="text-[13px] text-ink-2 leading-relaxed">{question.explanation}</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="p-5 rounded-xl flex flex-col items-center gap-2 text-center"
+                         style={{ background: 'rgb(var(--s1))', border: '1px dashed rgb(255 255 255 / 0.08)' }}>
+                      <p className="text-sm font-medium text-ink-2">Avaliação indisponível</p>
+                      <p className="text-[11px] text-ink-4">Não foi possível avaliar automaticamente.</p>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="p-5 rounded-xl flex flex-col items-center gap-2.5 text-center"
-                     style={{ background: 'rgb(var(--s1))', border: '1px dashed rgb(255 255 255 / 0.08)' }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                       style={{ background: 'rgb(var(--s3))' }}>
-                    <span className="text-lg">🚧</span>
+                <>
+                  {/* Gabarito oficial — multiple choice */}
+                  <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                    <p className="text-[11px] text-ink-4 mb-2 font-medium uppercase tracking-wider">Gabarito oficial</p>
+                    <div className="flex items-center gap-3">
+                      <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-bold text-emerald-400 shrink-0"
+                            style={{ background: 'rgb(34 197 94 / 0.12)', border: '1px solid rgb(34 197 94 / 0.2)' }}>
+                        {correct}
+                      </span>
+                      <span className="text-[13px] text-ink-2 leading-relaxed">
+                        {question.options?.find(o => o.letter === correct)?.text ?? ''}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
-                    <p className="text-[11px] text-ink-4 mt-0.5">Em breve terá acesso à resolução detalhada.</p>
-                  </div>
-                </div>
+
+                  {/* Resposta do aluno */}
+                  {!isCorrect && chosen && (
+                    <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                      <p className="text-[11px] text-ink-4 mb-2 font-medium uppercase tracking-wider">Sua resposta</p>
+                      <div className="flex items-center gap-3">
+                        <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-bold text-rose-400 shrink-0"
+                              style={{ background: 'rgb(239 68 68 / 0.12)', border: '1px solid rgb(239 68 68 / 0.2)' }}>
+                          {chosen}
+                        </span>
+                        <span className="text-[13px] text-ink-2 leading-relaxed">
+                          {question.options?.find(o => o.letter === chosen)?.text ?? ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Explicação */}
+                  {question.explanation ? (
+                    <div className="p-3.5 rounded-xl" style={{ background: 'rgb(var(--s1))', border: '1px solid rgb(255 255 255 / 0.04)' }}>
+                      <p className="text-[11px] text-ink-4 mb-1.5 font-medium uppercase tracking-wider">Explicação</p>
+                      <p className="text-[13px] text-ink-2 leading-relaxed">{question.explanation}</p>
+                    </div>
+                  ) : (
+                    <div className="p-5 rounded-xl flex flex-col items-center gap-2.5 text-center"
+                         style={{ background: 'rgb(var(--s1))', border: '1px dashed rgb(255 255 255 / 0.08)' }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                           style={{ background: 'rgb(var(--s3))' }}>
+                        <span className="text-lg">🚧</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-ink-2">Resolução em construção</p>
+                        <p className="text-[11px] text-ink-4 mt-0.5">Em breve terá acesso à resolução detalhada.</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
