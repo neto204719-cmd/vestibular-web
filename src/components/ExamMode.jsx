@@ -97,7 +97,7 @@ function OptionButton({ letter, text, state, onClick, disabled }) {
         state === 'correct' ? 'text-emerald-300' :
         state === 'wrong' ? 'text-rose-300' :
         state === 'selected' ? 'text-ink' : 'text-ink-2'
-      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>{text}</span>
+      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>{text}</span>
     </button>
   )
 }
@@ -832,7 +832,7 @@ export default function ExamMode({ filters, onClose }) {
                 </div>
 
                 {/* Enunciado — seleção gera grifo amarelo (toggle) */}
-                <div ref={statementRef} className="text-ink mb-5 whitespace-pre-wrap leading-[1.85] select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>
+                <div ref={statementRef} className="text-ink mb-5 whitespace-pre-wrap leading-[1.85] select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
                   {renderWithHighlights(q.statement, highlights)}
                 </div>
 

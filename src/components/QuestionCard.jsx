@@ -119,7 +119,7 @@ function OptionButton({ letter, text, state, onClick }) {
         state === 'wrong'          ? 'text-error' :
         state === 'reveal-correct' ? 'text-success/70' :
         'text-ink-2'
-      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>{text}</span>
+      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>{text}</span>
       {state === 'correct'        && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success" />}
       {state === 'wrong'          && <XCircle      size={16} className="shrink-0 ml-auto mt-0.5 text-error" />}
       {state === 'reveal-correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success/50" />}
@@ -271,7 +271,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
 
       {/* Enunciado */}
       <div className="mb-5" ref={statementRef}>
-        <p className="text-ink-2 leading-relaxed whitespace-pre-wrap select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>
+        <p className="text-ink-2 leading-relaxed whitespace-pre-wrap select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
           {renderWithHighlights(question.statement, highlights)}
         </p>
       </div>
