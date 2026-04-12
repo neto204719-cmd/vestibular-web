@@ -133,11 +133,26 @@ export default function Tutor() {
   const [msgs,    setMsgs]    = useState([])
   const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
-  const msgsEndRef = useRef(null)
-  const inputRef   = useRef(null)
+  const msgsEndRef    = useRef(null)
+  const msgsScrollRef = useRef(null)
+  const inputRef      = useRef(null)
+  const userScrolled  = useRef(false)
 
-  // Auto-scroll
+  // Detecta scroll manual do usuário
   useEffect(() => {
+    const el = msgsScrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60
+      userScrolled.current = !atBottom
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Auto-scroll: só executa se o usuário não rolou para cima
+  useEffect(() => {
+    if (userScrolled.current) return
     msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [msgs, loading])
 
@@ -149,6 +164,12 @@ export default function Tutor() {
     if (!text?.trim() || loading) return
     const msg = text.trim()
     setInput('')
+    // Resetar altura do textarea
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto'
+    }
+    // Ao enviar, volta o auto-scroll
+    userScrolled.current = false
     setMsgs(m => [...m, { role: 'user', text: msg }])
     setLoading(true)
 
@@ -195,6 +216,25 @@ export default function Tutor() {
     send(input)
   }
 
+  // Auto-resize do textarea conforme o conteúdo cresce
+  function handleInputChange(e) {
+    setInput(e.target.value)
+    const el = e.target
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px'
+  }
+
+  function handleInputKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e)
+      // Reset altura do textarea após envio
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto'
+      }
+    }
+  }
+
   function clearChat() {
     if (loading) return
     setMsgs([])
@@ -205,7 +245,7 @@ export default function Tutor() {
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] -mt-2 animate-fade-in">
       {/* ── Messages area ── */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={msgsScrollRef} className="flex-1 overflow-y-auto">
         {!hasMessages ? (
           /* ── Empty state ── */
           <div className="flex flex-col items-center justify-center h-full gap-6 px-4">
@@ -275,19 +315,16 @@ export default function Tutor() {
               }
             }}
           >
-            <input
+            <textarea
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={handleInputChange}
+              onKeyDown={handleInputKeyDown}
               placeholder="Pergunte algo ao Prof. ENEM..."
-              className="flex-1 bg-transparent px-3 py-3 text-[14px] text-ink placeholder:text-ink-4 focus:outline-none"
+              rows={1}
+              className="flex-1 bg-transparent px-3 py-3 text-[14px] text-ink placeholder:text-ink-4 focus:outline-none resize-none overflow-y-auto leading-relaxed"
+              style={{ maxHeight: '160px' }}
               disabled={loading}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSubmit(e)
-                }
-              }}
             />
             <button
               type="submit"
