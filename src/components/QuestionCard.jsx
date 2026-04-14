@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 import { renderWithHighlights } from '../lib/renderHighlights'
 import RenderStatement from './RenderStatement'
+import QuestionStatement from './QuestionStatement'
 
 /**
  * Parses image_url field — can be a JSON array of URLs, a single URL, or null.
@@ -19,29 +20,6 @@ function parseImageUrls(imageUrl) {
   }
   if (Array.isArray(imageUrl)) return imageUrl
   return []
-}
-
-/**
- * Splits a statement string on {{IMG_N}} placeholders.
- * Returns an array of { type: 'text', value } | { type: 'image', index }.
- */
-function splitStatementByImagePlaceholders(statement) {
-  if (!statement) return []
-  const parts = []
-  const regex = /\{\{IMG_(\d+)\}\}/g
-  let lastIndex = 0
-  let match
-  while ((match = regex.exec(statement)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push({ type: 'text', value: statement.slice(lastIndex, match.index) })
-    }
-    parts.push({ type: 'image', index: parseInt(match[1], 10) })
-    lastIndex = regex.lastIndex
-  }
-  if (lastIndex < statement.length) {
-    parts.push({ type: 'text', value: statement.slice(lastIndex) })
-  }
-  return parts
 }
 
 // ─── Popup flutuante de seleção de texto ──────────────────────────────────────
@@ -228,7 +206,6 @@ export default function QuestionCard({ question, index, previousAnswer }) {
   const isCorrect = submitted && chosen === correct
   const options   = [...(question.options ?? [])].sort((a, b) => a.letter.localeCompare(b.letter))
   const imageUrls = useMemo(() => parseImageUrls(question.image_url), [question.image_url])
-  const statementParts = useMemo(() => splitStatementByImagePlaceholders(question.statement), [question.statement])
 
   function getOptionState(letter) {
     if (!submitted) return chosen === letter ? 'selected' : 'idle'
@@ -312,51 +289,26 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </button>
       </div>
 
-      {/* Enunciado com imagens inline */}
+      {/* Enunciado com imagem inline ([IMAGEM] placeholder) */}
       <div className="mb-5" ref={statementRef}>
         <div className="text-ink-2 leading-relaxed select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
-          {statementParts.map((part, i) =>
-            part.type === 'text' ? (
-              <RenderStatement key={i} text={part.value} className="render-statement" />
-            ) : (
-              imageUrls[part.index] ? (
-                <div key={i} className="my-3">
-                  <img
-                    src={imageUrls[part.index]}
-                    alt={`Imagem ${part.index + 1} da questão`}
-                    className="max-w-full object-contain rounded-xl"
-                    style={{ maxHeight: '320px' }}
-                  />
-                </div>
-              ) : (
-                <div key={i} className="my-3 flex items-center gap-2 px-4 py-3.5 rounded-xl text-ink-3 text-xs"
-                     style={{ background: 'rgb(var(--s3))', border: '1px solid rgb(255 255 255 / 0.06)' }}>
-                  <ImageOff size={15} /> Imagem indisponível
-                </div>
-              )
-            )
+          <QuestionStatement
+            statement={question.statement}
+            hasImage={imageUrls.length > 0}
+            imageUrl={question.image_url}
+            imageDescription={question.image_description}
+          />
+          {imageUrls.length === 0 && question.statement?.includes('[IMAGEM]') && (
+            <div className="my-3 flex items-center gap-2 px-4 py-3.5 rounded-xl text-ink-3 text-xs"
+                 style={{ background: 'rgb(var(--s3))', border: '1px solid rgb(255 255 255 / 0.06)' }}>
+              <ImageOff size={15} /> Imagem indisponível
+            </div>
           )}
         </div>
       </div>
 
       {/* Popup */}
       {selPopup && <SelectionPopup rect={selPopup.rect} onAsk={handlePopupAsk} />}
-
-      {/* Imagens sem placeholder (questões que têm image_url mas sem {{IMG_N}} no statement) */}
-      {imageUrls.length > 0 && !question.statement?.includes('{{IMG_') && (
-        <div className="mb-5 space-y-3">
-          {imageUrls.map((url, i) => (
-            <div key={i}>
-              <img
-                src={url}
-                alt={`Imagem ${i + 1} da questão`}
-                className="max-w-full object-contain rounded-xl"
-                style={{ maxHeight: '320px' }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Alternativas */}
       <div className="space-y-2 mb-5">

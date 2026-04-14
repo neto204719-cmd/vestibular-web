@@ -9,6 +9,7 @@ import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 import { renderWithHighlights } from '../lib/renderHighlights'
 import RenderStatement from './RenderStatement'
+import QuestionStatement from './QuestionStatement'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -834,21 +835,19 @@ export default function ExamMode({ filters, onClose }) {
                   )}
                 </div>
 
-                {/* Enunciado — seleção gera grifo amarelo (toggle) */}
+                {/* Enunciado com imagem inline ([IMAGEM] placeholder) — seleção gera grifo amarelo */}
                 <div ref={statementRef} className="text-ink mb-5 leading-[1.85] select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
-                  <RenderStatement text={q.statement} className="render-statement" />
+                  <QuestionStatement
+                    statement={q.statement}
+                    hasImage={!!q.image_url}
+                    imageUrl={q.image_url}
+                    imageDescription={q.image_description}
+                    maxHeight={288}
+                  />
                 </div>
 
                 {/* Popup flutuante de seleção */}
                 {selPopup && <SelectionPopup rect={selPopup.rect} onAsk={handlePopupAsk} />}
-
-                {/* Imagem — aparece ENTRE enunciado e alternativas */}
-                {q.image_url && (
-                  <div className="mb-6 flex justify-center">
-                    <img src={q.image_url} alt="Imagem da questão"
-                      className="max-w-full max-h-72 rounded-xl border border-surface-3 object-contain" />
-                  </div>
-                )}
 
                 {/* Options */}
                 <div className="space-y-3 mb-8">
