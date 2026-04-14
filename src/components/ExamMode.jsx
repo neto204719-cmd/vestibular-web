@@ -8,6 +8,7 @@ import {
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 import { renderWithHighlights } from '../lib/renderHighlights'
+import RenderStatement from './RenderStatement'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -93,11 +94,13 @@ function OptionButton({ letter, text, state, onClick, disabled }) {
       <span className={`mt-0.5 flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${letterStyles[state] ?? letterStyles.idle}`}>
         {letter}
       </span>
-      <span className={`leading-relaxed pt-0.5 ${
+      <span className={`leading-relaxed pt-0.5 flex-1 ${
         state === 'correct' ? 'text-emerald-300' :
         state === 'wrong' ? 'text-rose-300' :
         state === 'selected' ? 'text-ink' : 'text-ink-2'
-      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>{text}</span>
+      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
+        <RenderStatement text={text} className="render-option-inline" />
+      </span>
     </button>
   )
 }
@@ -832,8 +835,8 @@ export default function ExamMode({ filters, onClose }) {
                 </div>
 
                 {/* Enunciado — seleção gera grifo amarelo (toggle) */}
-                <div ref={statementRef} className="text-ink mb-5 whitespace-pre-wrap leading-[1.85] select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
-                  {renderWithHighlights(q.statement, highlights)}
+                <div ref={statementRef} className="text-ink mb-5 leading-[1.85] select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
+                  <RenderStatement text={q.statement} className="render-statement" />
                 </div>
 
                 {/* Popup flutuante de seleção */}

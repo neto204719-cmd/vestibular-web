@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap, Minus } from 'luc
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 import { renderWithHighlights } from '../lib/renderHighlights'
+import RenderStatement from './RenderStatement'
 
 /**
  * Parses image_url field — can be a JSON array of URLs, a single URL, or null.
@@ -153,12 +154,14 @@ function OptionButton({ letter, text, state, onClick }) {
       >
         {letter}
       </span>
-      <span className={`leading-relaxed mt-0.5 transition-colors ${
+      <span className={`leading-relaxed mt-0.5 transition-colors flex-1 ${
         state === 'correct'        ? 'text-success font-medium' :
         state === 'wrong'          ? 'text-error' :
         state === 'reveal-correct' ? 'text-success/70' :
         'text-ink-2'
-      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>{text}</span>
+      }`} style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
+        <RenderStatement text={text} className="render-option-inline" />
+      </span>
       {state === 'correct'        && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success" />}
       {state === 'wrong'          && <XCircle      size={16} className="shrink-0 ml-auto mt-0.5 text-error" />}
       {state === 'reveal-correct' && <CheckCircle2 size={16} className="shrink-0 ml-auto mt-0.5 text-success/50" />}
@@ -314,7 +317,7 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         <div className="text-ink-2 leading-relaxed select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
           {statementParts.map((part, i) =>
             part.type === 'text' ? (
-              <p key={i} className="whitespace-pre-wrap">{renderWithHighlights(part.value, highlights)}</p>
+              <RenderStatement key={i} text={part.value} className="render-statement" />
             ) : (
               imageUrls[part.index] ? (
                 <div key={i} className="my-3">

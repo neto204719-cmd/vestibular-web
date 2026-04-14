@@ -187,6 +187,55 @@ html:not(.dark) {
 
 /* ── Utility layer ─────────────────────────────────────────────────────────── */
 
+/* ── KaTeX + Markdown rendering ───────────────────────────────────────────── */
+
+/* KaTeX inherits text color from theme */
+.katex { color: inherit; }
+.katex .mord, .katex .mbin, .katex .mrel,
+.katex .mopen, .katex .mclose, .katex .mpunct,
+.katex .mop { color: inherit; }
+
+/* Statement rendering */
+.render-statement p { margin-bottom: 0.5em; }
+.render-statement p:last-child { margin-bottom: 0; }
+.render-statement blockquote {
+  border-left: 3px solid rgb(var(--accent-rgb) / 0.4);
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: rgb(var(--ink2-rgb));
+}
+
+/* Option inline — no extra margins, single-line flow */
+.render-option-inline p { margin: 0; display: inline; }
+.render-option-inline > :first-child { display: inline; }
+
+/* Markdown tables */
+.render-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.render-th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: rgb(var(--ink-rgb));
+  background: rgb(var(--s3));
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+.render-td {
+  padding: 8px 12px;
+  color: rgb(var(--ink2-rgb));
+  border: 1px solid rgb(255 255 255 / 0.06);
+}
+html:not(.dark) .render-th {
+  background: rgb(var(--s3));
+  border-color: rgb(0 0 0 / 0.08);
+}
+html:not(.dark) .render-td {
+  border-color: rgb(0 0 0 / 0.06);
+}
+
 @layer utilities {
   .font-heading {
     font-family: 'Satoshi', 'General Sans', system-ui, sans-serif;
