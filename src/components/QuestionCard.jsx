@@ -317,11 +317,11 @@ export default function QuestionCard({ question, index, previousAnswer }) {
               <p key={i} className="whitespace-pre-wrap">{renderWithHighlights(part.value, highlights)}</p>
             ) : (
               imageUrls[part.index] ? (
-                <div key={i} className="my-3 rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s3))' }}>
+                <div key={i} className="my-3">
                   <img
                     src={imageUrls[part.index]}
                     alt={`Imagem ${part.index + 1} da questão`}
-                    className="max-w-full mx-auto object-contain"
+                    className="max-w-full object-contain rounded-xl"
                     style={{ maxHeight: '320px' }}
                   />
                 </div>
@@ -343,11 +343,11 @@ export default function QuestionCard({ question, index, previousAnswer }) {
       {imageUrls.length > 0 && !question.statement?.includes('{{IMG_') && (
         <div className="mb-5 space-y-3">
           {imageUrls.map((url, i) => (
-            <div key={i} className="rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s3))' }}>
+            <div key={i}>
               <img
                 src={url}
                 alt={`Imagem ${i + 1} da questão`}
-                className="max-w-full mx-auto object-contain"
+                className="max-w-full object-contain rounded-xl"
                 style={{ maxHeight: '320px' }}
               />
             </div>
