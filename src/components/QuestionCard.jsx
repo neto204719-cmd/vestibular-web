@@ -1,8 +1,47 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { CheckCircle2, XCircle, Star, ImageOff, GraduationCap, Minus } from 'lucide-react'
 import { api } from '../lib/api'
 import QuestionChat from './QuestionChat'
 import { renderWithHighlights } from '../lib/renderHighlights'
+
+/**
+ * Parses image_url field — can be a JSON array of URLs, a single URL, or null.
+ */
+function parseImageUrls(imageUrl) {
+  if (!imageUrl) return []
+  if (typeof imageUrl === 'string') {
+    const trimmed = imageUrl.trim()
+    if (trimmed.startsWith('[')) {
+      try { return JSON.parse(trimmed) } catch { return [] }
+    }
+    return [trimmed]
+  }
+  if (Array.isArray(imageUrl)) return imageUrl
+  return []
+}
+
+/**
+ * Splits a statement string on {{IMG_N}} placeholders.
+ * Returns an array of { type: 'text', value } | { type: 'image', index }.
+ */
+function splitStatementByImagePlaceholders(statement) {
+  if (!statement) return []
+  const parts = []
+  const regex = /\{\{IMG_(\d+)\}\}/g
+  let lastIndex = 0
+  let match
+  while ((match = regex.exec(statement)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', value: statement.slice(lastIndex, match.index) })
+    }
+    parts.push({ type: 'image', index: parseInt(match[1], 10) })
+    lastIndex = regex.lastIndex
+  }
+  if (lastIndex < statement.length) {
+    parts.push({ type: 'text', value: statement.slice(lastIndex) })
+  }
+  return parts
+}
 
 // ─── Popup flutuante de seleção de texto ──────────────────────────────────────
 
@@ -134,7 +173,6 @@ export default function QuestionCard({ question, index, previousAnswer }) {
   const [submitted, setSubmitted] = useState(!!previousAnswer)
   const [saving,    setSaving]    = useState(false)
   const [favorite,  setFavorite]  = useState(false)
-  const [imgError,  setImgError]  = useState(false)
 
   // ── Seleção de texto → grifo amarelo + Perguntar ao Tutor ──
   const statementRef   = useRef(null)
@@ -186,6 +224,8 @@ export default function QuestionCard({ question, index, previousAnswer }) {
   const correct   = question.correct_letter?.trim()
   const isCorrect = submitted && chosen === correct
   const options   = [...(question.options ?? [])].sort((a, b) => a.letter.localeCompare(b.letter))
+  const imageUrls = useMemo(() => parseImageUrls(question.image_url), [question.image_url])
+  const statementParts = useMemo(() => splitStatementByImagePlaceholders(question.statement), [question.statement])
 
   function getOptionState(letter) {
     if (!submitted) return chosen === letter ? 'selected' : 'idle'
@@ -269,31 +309,49 @@ export default function QuestionCard({ question, index, previousAnswer }) {
         </button>
       </div>
 
-      {/* Enunciado */}
+      {/* Enunciado com imagens inline */}
       <div className="mb-5" ref={statementRef}>
-        <p className="text-ink-2 leading-relaxed whitespace-pre-wrap select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
-          {renderWithHighlights(question.statement, highlights)}
-        </p>
+        <div className="text-ink-2 leading-relaxed select-text" style={{ fontFamily: 'Arial, sans-serif', fontSize: '15px' }}>
+          {statementParts.map((part, i) =>
+            part.type === 'text' ? (
+              <p key={i} className="whitespace-pre-wrap">{renderWithHighlights(part.value, highlights)}</p>
+            ) : (
+              imageUrls[part.index] ? (
+                <div key={i} className="my-3 rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s3))' }}>
+                  <img
+                    src={imageUrls[part.index]}
+                    alt={`Imagem ${part.index + 1} da questão`}
+                    className="max-w-full mx-auto object-contain"
+                    style={{ maxHeight: '320px' }}
+                  />
+                </div>
+              ) : (
+                <div key={i} className="my-3 flex items-center gap-2 px-4 py-3.5 rounded-xl text-ink-3 text-xs"
+                     style={{ background: 'rgb(var(--s3))', border: '1px solid rgb(255 255 255 / 0.06)' }}>
+                  <ImageOff size={15} /> Imagem indisponível
+                </div>
+              )
+            )
+          )}
+        </div>
       </div>
 
       {/* Popup */}
       {selPopup && <SelectionPopup rect={selPopup.rect} onAsk={handlePopupAsk} />}
 
-      {/* Imagem */}
-      {question.image_url && !imgError && (
-        <div className="mb-5 rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s3))' }}>
-          <img
-            src={question.image_url}
-            alt="Imagem da questão"
-            className="max-w-full max-h-80 mx-auto object-contain"
-            onError={() => setImgError(true)}
-          />
-        </div>
-      )}
-      {question.image_url && imgError && (
-        <div className="mb-5 flex items-center gap-2 px-4 py-3.5 rounded-xl text-ink-3 text-xs"
-             style={{ background: 'rgb(var(--s3))', border: '1px solid rgb(255 255 255 / 0.06)' }}>
-          <ImageOff size={15} /> Imagem indisponível
+      {/* Imagens sem placeholder (questões que têm image_url mas sem {{IMG_N}} no statement) */}
+      {imageUrls.length > 0 && !question.statement?.includes('{{IMG_') && (
+        <div className="mb-5 space-y-3">
+          {imageUrls.map((url, i) => (
+            <div key={i} className="rounded-xl overflow-hidden" style={{ border: '1px solid rgb(255 255 255 / 0.06)', background: 'rgb(var(--s3))' }}>
+              <img
+                src={url}
+                alt={`Imagem ${i + 1} da questão`}
+                className="max-w-full mx-auto object-contain"
+                style={{ maxHeight: '320px' }}
+              />
+            </div>
+          ))}
         </div>
       )}
 
