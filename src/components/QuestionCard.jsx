@@ -250,8 +250,8 @@ export default function QuestionCard({ question, index, previousAnswer }) {
                 {question.topic}
               </span>
             )}
-            <span className="badge text-ink-4 text-[11px] ml-auto" style={{ background: 'rgb(var(--s3))' }}>
-              {question.vestibular} {question.year}
+            <span className="badge text-ink-4 text-[11px] ml-auto font-mono" style={{ background: 'rgb(var(--s3))' }}>
+              {question.question_id || `${question.vestibular} ${question.year}`}
             </span>
           </div>
         </div>
