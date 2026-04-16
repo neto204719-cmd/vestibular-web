@@ -27,7 +27,7 @@ function QuestionImage({ src, alt, maxHeight = 320 }) {
         src={src}
         alt={alt || 'Imagem da questão'}
         loading="lazy"
-        className="max-w-full object-contain rounded-xl"
+        className="max-w-full object-contain"
         style={{ maxHeight: `${maxHeight}px` }}
       />
     </figure>
