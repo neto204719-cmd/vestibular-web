@@ -6,7 +6,7 @@ import {
 import QuestionFilters from '../components/QuestionFilters'
 import QuestionCard    from '../components/QuestionCard'
 import ExamMode        from '../components/ExamMode'
-import { api } from '../lib/api'
+import { fetchQuestions as fetchQuestionsFromSupabase } from '../lib/questionsClient'
 
 const EMPTY_FILTERS = {
   subject_area: '', vestibular: '', year: '', topic: '',
@@ -109,21 +109,22 @@ export default function Questoes() {
     setLoading(true)
     setFetchError(null)
     try {
-      const params = new URLSearchParams({ page: p, limit: 10 })
-      if (f.subject_area)   params.set('subject_area',   f.subject_area)
-      if (f.vestibular)     params.set('vestibular',     f.vestibular)
-      if (f.year)           params.set('year',           f.year)
-      if (f.topic)          params.set('topic',          f.topic)
-      if (f.onlyImages)     params.set('onlyImages',     'true')
-      if (f.onlyWrong)      params.set('onlyWrong',      'true')
-      if (f.onlyFavorites)  params.set('onlyFavorites',  'true')
-
-      const data = await api.get(`/api/questions?${params}`)
-
+      const data = await fetchQuestionsFromSupabase({
+        subject_area:  f.subject_area,
+        vestibular:    f.vestibular,
+        year:          f.year,
+        topic:         f.topic,
+        onlyImages:    f.onlyImages,
+        onlyWrong:     f.onlyWrong,
+        onlyFavorites: f.onlyFavorites,
+        page: p,
+        limit: 10,
+      })
       setQuestions(data.data ?? [])
       setTotal(data.count ?? 0)
       setPages(data.pages ?? 1)
     } catch (err) {
+      console.error('[Questoes] fetchQuestions error:', err)
       setQuestions([])
       setFetchError(err?.message ?? 'Erro desconhecido')
     } finally {
@@ -301,8 +302,11 @@ export default function Questoes() {
                 <SearchX size={26} className="text-error" />
               </div>
               <div className="text-center">
-                <p className="font-heading text-base font-bold text-ink">Erro ao carregar questões</p>
-                <p className="text-xs text-error/80 mt-1.5 font-mono">{fetchError}</p>
+                <p className="font-heading text-base font-bold text-ink">Não foi possível carregar as questões</p>
+                <p className="text-xs text-ink-3 mt-1.5 max-w-xs">
+                  Verifique sua conexão e tente novamente.
+                </p>
+                <p className="text-[11px] text-error/70 mt-1 font-mono">{fetchError}</p>
                 <button
                   onClick={() => fetchQuestions(filters, page)}
                   className="mt-4 text-[13px] text-accent hover:text-accent-hover transition-colors duration-200 font-medium"

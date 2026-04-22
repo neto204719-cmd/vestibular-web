@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, SlidersHorizontal, X, RotateCcw } from 'lucide-react'
-import { api } from '../lib/api'
+import { fetchFiltersMetadata } from '../lib/questionsClient'
 
 function FilterSelect({ label, value, onChange, options, placeholder = 'Todos' }) {
   return (
@@ -46,9 +46,9 @@ export default function QuestionFilters({ filters, onChange, onReset }) {
   const [layer3Open,  setLayer3Open]  = useState(false)
 
   useEffect(() => {
-    api.get('/api/filters/metadata')
+    fetchFiltersMetadata()
       .then(d => setMeta(d))
-      .catch(() => {})
+      .catch(err => console.error('[QuestionFilters] metadata error:', err))
   }, [])
 
   // Chips dos filtros ativos

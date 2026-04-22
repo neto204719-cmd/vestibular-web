@@ -6,6 +6,7 @@ import {
   AlertTriangle, Loader2, Eye, EyeOff, GraduationCap,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import { fetchQuestions as fetchQuestionsFromSupabase } from '../lib/questionsClient'
 import QuestionChat from './QuestionChat'
 import { renderWithHighlights } from '../lib/renderHighlights'
 import RenderStatement from './RenderStatement'
@@ -523,12 +524,14 @@ export default function ExamMode({ filters, onClose }) {
     setLoadingQ(true)
     setError(null)
     try {
-      const params = new URLSearchParams({ page: 1, limit: quantity })
-      if (filters.subject_area) params.set('subject_area', filters.subject_area)
-      if (filters.vestibular) params.set('vestibular', filters.vestibular)
-      if (filters.year) params.set('year', filters.year)
-      if (filters.topic) params.set('topic', filters.topic)
-      const result = await api.get(`/api/questions?${params}`)
+      const result = await fetchQuestionsFromSupabase({
+        subject_area: filters.subject_area,
+        vestibular:   filters.vestibular,
+        year:         filters.year,
+        topic:        filters.topic,
+        page:         1,
+        limit:        quantity,
+      })
       if (!result.data?.length) {
         setError('Nenhuma questão encontrada com esses filtros. Ajuste e tente novamente.')
         setLoadingQ(false)
